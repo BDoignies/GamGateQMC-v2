@@ -12,7 +12,7 @@ cmake_policy(SET CMP0048 NEW)
 
 project(gam_g4)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 # Need Geant4
 find_package(Geant4 REQUIRED OPTIONAL_COMPONENTS qt)
@@ -71,6 +71,7 @@ add_subdirectory(external/fmt EXCLUDE_FROM_ALL)
 file(GLOB all_SRCS
         "${PROJECT_SOURCE_DIR}/gam_g4/g4_bindings/*.cpp"
         "${PROJECT_SOURCE_DIR}/gam_g4/gam_lib/*.cpp"
+        "${PROJECT_SOURCE_DIR}/gam_g4/gam_lib/QMC/*.cpp"
         )
 pybind11_add_module(gam_g4
         #NO_EXTRAS

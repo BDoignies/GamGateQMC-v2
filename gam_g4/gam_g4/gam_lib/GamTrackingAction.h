@@ -12,6 +12,9 @@
 #include "G4Track.hh"
 #include "GamVActor.h"
 
+
+#include "QMC/CurrentTrackInformationAction.h"
+
 class GamTrackingAction : public G4UserTrackingAction {
 
 public:
@@ -27,6 +30,7 @@ public:
     virtual void PostUserTrackingAction(const G4Track *Track);
 
 protected:
+    CurrentTrackInformationAction trackInformation; 
     std::vector<GamVActor *> fPreUserTrackingActionActors;
     std::vector<GamVActor *> fPostUserTrackingActionActors;
 };

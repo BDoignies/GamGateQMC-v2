@@ -25,12 +25,16 @@ void GamTrackingAction::RegisterActor(GamVActor *actor) {
 }
 
 void GamTrackingAction::PreUserTrackingAction(const G4Track *track) {
+    trackInformation.PreUserTrackingAction(track);
+    
     for (auto actor : fPreUserTrackingActionActors) {
         actor->PreUserTrackingAction(track);
     }
 }
 
 void GamTrackingAction::PostUserTrackingAction(const G4Track *track) {
+    trackInformation.PostUserTrackingAction(track);
+
     for (auto actor :fPostUserTrackingActionActors) {
         actor->PostUserTrackingAction(track);
     }

@@ -263,10 +263,14 @@ class Simulation:
             self.g4_HepRandomEngine = g4.MixMaxRng()
         if engine_name == 'MersenneTwister':
             self.g4_HepRandomEngine = g4.MTwistEngine()
+        if engine_name == g4.qmc.QMCEngine:
+            self.g4_HepRandomEngine = g4.qmc.QMCRandomEngine()
+        
         if not self.g4_HepRandomEngine:
             s = f'Cannot find the random engine {engine_name}\n'
             s += f'Use: MersenneTwister or MixMaxRng'
             gam.fatal(s)
+
 
         # set the random engine
         g4.G4Random.setTheEngine(self.g4_HepRandomEngine)

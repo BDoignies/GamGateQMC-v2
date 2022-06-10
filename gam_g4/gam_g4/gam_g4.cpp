@@ -26,6 +26,8 @@ void init_G4UnitsTable(py::module &);
 // CLHEP
 void init_Randomize(py::module &);
 
+void init_QMC(py::module &);
+
 // materials
 void init_G4NistManager(py::module &);
 
@@ -398,4 +400,7 @@ PYBIND11_MODULE(gam_g4, m) {
     init_GamUniqueVolumeIDManager(m);
     init_GamUniqueVolumeID(m);
     init_GamVolumeDepthID(m);
+
+
+    init_QMC(m);
 }
