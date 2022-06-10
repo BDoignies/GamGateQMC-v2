@@ -6,6 +6,7 @@
 #include <CLHEP/Random/RandomEngine.h>
 
 #include "CurrentTrackInformationAction.h"
+#include "RandomProfiler.h"
 
 class QMCRandomEngine : public CLHEP::HepRandomEngine
 {
@@ -23,5 +24,6 @@ public:
 
     std::string name() const;
 private:
+    RandomProfiler profiler;
     CLHEP::MixMaxRng tmpEngine;
 };

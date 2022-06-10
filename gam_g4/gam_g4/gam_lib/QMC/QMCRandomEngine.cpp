@@ -1,19 +1,18 @@
 #include "QMCRandomEngine.h"
 
-QMCRandomEngine::QMCRandomEngine()
+QMCRandomEngine::QMCRandomEngine() : 
+    profiler("test.json")
 { }
 
 double QMCRandomEngine::flat(const std::source_location location)
 {
-    std::cout << CurrentTrackInformation::track  << std::endl;
-    std::cout << location.file_name() << "(" << location.line() << "," << location.column() << ") " << location.function_name() << std::endl;
+    profiler.AddCall(CurrentTrackInformation::track, location);
     return tmpEngine.flat();
 }
 
 void QMCRandomEngine::flatArray(const int size, double* vect, const std::source_location location)
 {
-    std::cout << CurrentTrackInformation::track << std::endl;
-    std::cout << location.file_name() << "(" << location.line() << "," << location.column() << ") " << location.function_name() << std::endl;
+    profiler.AddCall(CurrentTrackInformation::track, location);
     return tmpEngine.flatArray(size, vect);
 }
 
