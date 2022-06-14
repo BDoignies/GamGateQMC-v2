@@ -23,6 +23,7 @@ public:
 
     inline void PostUserTrackingAction(const G4Track* track) override
     {
+        ((void) track);
         CurrentTrackInformation::track = nullptr;
     }
 private:

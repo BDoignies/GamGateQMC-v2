@@ -54,10 +54,10 @@ RandomProfiler::RandomProfiler(const std::string& outFilename)
 
     if (!outFile.is_open())
     {
-        std::string msg = "[RandomProfiler]: Can not open file " + outFilename;
+        std::string msg = "[RandomProfiler]: Can not open file " + outFilename + ", the profiler will not output its results";
         G4Exception(
             __FILE__, __PRETTY_FUNCTION__, 
-            G4ExceptionSeverity::FatalErrorInArgument, msg.c_str()
+            G4ExceptionSeverity::JustWarning, msg.c_str()
         );
     }
 }
@@ -102,57 +102,116 @@ void RandomProfiler::AddCall(const G4Track* track, const std::source_location& l
     }
 }
 
-RandomProfiler::~RandomProfiler()
+void RandomProfiler::WriteProfiler()
 {
+    if (!outFile.is_open()) return;
+
     bool compressed = false;
 
-    outFile << "{"; if (compressed) outFile << "\n";
-    if (compressed) outFile << "\t"; outFile << "\"PrimaryTracks\":"; if (compressed) outFile << "\n";
-    if (compressed) outFile << "\t"; outFile << "["; if(compressed) outFile << "\n";
+    outFile << "{"; 
+    if (compressed) outFile << "\n";
+    if (compressed) outFile << "\t"; 
+        outFile << "\"PrimaryTracks\":"; 
+    if (compressed) outFile << "\n";
+    
+    if (compressed) outFile << "\t"; 
+        outFile << "["; 
+    if(compressed) outFile << "\n";
 
     std::size_t i = 0;
     for (const auto& pTrack : primaryTracks)
     {   
-        if (compressed) outFile << "\t\t"; outFile << "["; if (compressed) outFile << "\n";
+        if (compressed) outFile << "\t\t"; 
+        outFile << "["; 
+        if (compressed) outFile << "\n";
+        
         std::size_t j = 0;
         for (const auto& track : pTrack)
         {
-                if (compressed) outFile << "\t\t\t"; outFile << "{"; if (compressed) outFile << "\n";
+                if (compressed) outFile << "\t\t\t";
+                outFile << "{"; 
+                if (compressed) outFile << "\n";
 
-                    if (compressed) outFile << "\t\t\t\t"; outFile << "\"TrackID\": "  << track.trackID << ","; if (compressed) outFile << "\n";
-                    if (compressed) outFile << "\t\t\t\t"; outFile << "\"ParentID\": " << track.parentID << ",";  if (compressed) outFile << "\n";
-                    if (compressed) outFile << "\t\t\t\t"; outFile << "\"Paricle\": \""  << track.particleName << "\",";  if (compressed) outFile << "\n";
-                    if (compressed) outFile << "\t\t\t\t"; outFile << "\"Calls\":"; if (compressed) outFile << "\n";
-                    if (compressed) outFile << "\t\t\t\t"; outFile << "["; if (compressed) outFile << "\n";
+                    if (compressed) outFile << "\t\t\t\t"; 
+                    outFile << "\"TrackID\": "  << track.trackID << ","; 
+                    if (compressed) outFile << "\n";
+                    
+                    if (compressed) outFile << "\t\t\t\t"; 
+                    outFile << "\"ParentID\": " << track.parentID << ",";  
+                    if (compressed) outFile << "\n";
+                    
+                    if (compressed) outFile << "\t\t\t\t"; 
+                    outFile << "\"Paricle\": \""  << track.particleName << "\",";  
+                    if (compressed) outFile << "\n";
+                
+                    if (compressed) outFile << "\t\t\t\t"; 
+                    outFile << "\"Calls\":"; 
+                    if (compressed) outFile << "\n";
+                    
+                    if (compressed) outFile << "\t\t\t\t"; 
+                    outFile << "["; 
+                    if (compressed) outFile << "\n";
 
                         std::size_t k = 0;
                         for (const auto& call : track.calls)
                         {
-                            if (compressed) outFile << "\t\t\t\t\t"; outFile << "{"; if (compressed) outFile << "\n";
+                            if (compressed) outFile << "\t\t\t\t\t"; 
+                            outFile << "{"; 
+                            if (compressed) outFile << "\n";
 
-                                if (compressed) outFile << "\t\t\t\t\t\t"; outFile << "\"ClassName\": \"" << call.className << "\","; if (compressed) outFile << "\n";
-                                if (compressed) outFile << "\t\t\t\t\t\t"; outFile << "\"FuncName\": \""  << call.funcName  << "\","; if (compressed) outFile << "\n";
-                                if (compressed) outFile << "\t\t\t\t\t\t"; outFile << "\"Line\": "        << call.line      <<   ","; if (compressed) outFile << "\n";
-                                if (compressed) outFile << "\t\t\t\t\t\t"; outFile << "\"Column\": "      << call.col       <<   ","; if (compressed) outFile << "\n";
-                                if (compressed) outFile << "\t\t\t\t\t\t"; outFile << "\"StepNum\": "     << call.id        <<    ""; if (compressed) outFile << "\n";
+                                if (compressed) outFile << "\t\t\t\t\t\t"; 
+                                outFile << "\"ClassName\": \"" << call.className << "\","; 
+                                if (compressed) outFile << "\n";
+
+                                if (compressed) outFile << "\t\t\t\t\t\t"; 
+                                outFile << "\"FuncName\": \""  << call.funcName  << "\","; 
+                                if (compressed) outFile << "\n";
+
+                                if (compressed) outFile << "\t\t\t\t\t\t"; 
+                                outFile << "\"Line\": "        << call.line      <<   ","; 
+                                if (compressed) outFile << "\n";
+
+                                if (compressed) outFile << "\t\t\t\t\t\t"; 
+                                outFile << "\"Column\": "      << call.col       <<   ","; 
+                                if (compressed) outFile << "\n";
+
+                                if (compressed) outFile << "\t\t\t\t\t\t"; 
+                                outFile << "\"StepNum\": "     << call.id        <<    ""; 
+                                if (compressed) outFile << "\n";
+
                                 
-                            if (compressed) outFile << "\t\t\t\t\t"; outFile << "}";
+                            if (compressed) outFile << "\t\t\t\t\t"; 
+                                outFile << "}";
+                            
                             if (++k != track.calls.size()) outFile << ",";
                             if (compressed) outFile << "\n";
                         }
 
-                    if (compressed) outFile << "\t\t\t\t"; outFile << "]"; if (compressed) outFile << "\n";
+                    if (compressed) outFile << "\t\t\t\t"; 
+                    outFile << "]"; 
+                    if (compressed) outFile << "\n";
                 
-                if (compressed) outFile << "\t\t\t"; outFile << "}";
+                if (compressed) outFile << "\t\t\t"; 
+                outFile << "}";
+                
                 if (++j != pTrack.size()) outFile << ",";
                 if (compressed) outFile << "\n";
         }
 
-        if (compressed) outFile << "\t\t"; outFile << "]";
+        if (compressed) outFile << "\t\t"; 
+        outFile << "]";
+        
         if (++i != primaryTracks.size()) outFile << ",";
         if (compressed) outFile << "\n";
     }
 
-    if (compressed) outFile << "\t"; outFile << "]"; if (compressed) outFile << "\n";
+    if (compressed) outFile << "\t"; 
+    outFile << "]"; 
+    if (compressed) outFile << "\n";
     outFile << "}";
+}
+
+RandomProfiler::~RandomProfiler()
+{
+    WriteProfiler();
 }

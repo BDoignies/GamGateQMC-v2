@@ -36,6 +36,8 @@ public:
 
     ~RandomProfiler();
 private:
+    void WriteProfiler();
+private:
     std::ofstream outFile;
 
     bool isNewPrimaryTrack;
