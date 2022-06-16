@@ -1,7 +1,6 @@
 import gam_gate as gam
 import gam_g4 as g4
 
-
 class ActionManager(g4.G4VUserActionInitialization):
     """
     Main object to manage all actions during a simulation.
@@ -57,3 +56,7 @@ class ActionManager(g4.G4VUserActionInitialization):
         ta = g4.GamTrackingAction()
         self.SetUserAction(ta)
         self.g4_TrackingAction.append(ta)
+
+        import gam_g4.gam_g4.qmc as qmc
+        sa = qmc.CurrentStepInformationAction()
+        self.SetUserAction(sa)
