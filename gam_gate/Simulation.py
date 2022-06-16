@@ -265,7 +265,8 @@ class Simulation:
             self.g4_HepRandomEngine = g4.MTwistEngine()
         if engine_name == g4.qmc.QMCEngine:
             profiler = self.user_info.random_profiler_output
-            self.g4_HepRandomEngine = g4.qmc.QMCRandomEngine(profiler)
+            readable = self.user_info.random_profiler_readable
+            self.g4_HepRandomEngine = g4.qmc.QMCRandomEngine(profiler, readable)
         
         if not self.g4_HepRandomEngine:
             s = f'Cannot find the random engine {engine_name}\n'

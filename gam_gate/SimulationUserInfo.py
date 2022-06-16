@@ -37,8 +37,9 @@ class SimulationUserInfo:
 
         # random engine
         # MixMaxRng seems recommended for MultiThread
-        self.random_engine = 'MixMaxRng'  # 'MersenneTwister'
-        self.random_profiler_output = ''  # QMC... Profiler output 
+        self.random_engine = 'MixMaxRng'      # 'MersenneTwister'
+        self.random_profiler_output = ''      # QMC... Profiler output 
+        self.random_profiler_readable = False # QMC... Profiler readability
         self.random_seed = 'auto'
 
     @property

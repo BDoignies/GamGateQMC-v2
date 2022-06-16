@@ -11,7 +11,7 @@
 class QMCRandomEngine : public CLHEP::HepRandomEngine
 {
 public:
-    QMCRandomEngine(const std::string& profileOutput = "");
+    QMCRandomEngine(const std::string& profileOutput = "", bool profileReadable = false);
 
     double flat(const std::source_location location = std::source_location::current()) override;
     void flatArray(const int size, double* vect, const std::source_location location = std::source_location::current()) override;
@@ -23,9 +23,9 @@ public:
     void showStatus() const override;
 
     std::string name() const;
-private:
-    const std::string profileFilename;
 
-    RandomProfiler profiler;
+    ~QMCRandomEngine();
+private:
+    RandomProfiler* profiler;
     CLHEP::MixMaxRng tmpEngine;
 };

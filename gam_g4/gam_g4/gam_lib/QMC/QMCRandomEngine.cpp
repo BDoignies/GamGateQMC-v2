@@ -1,19 +1,20 @@
 #include "QMCRandomEngine.h"
 
-QMCRandomEngine::QMCRandomEngine(const std::string& fname) :
-    profileFilename(fname),
-    profiler(fname)
-{ }
+QMCRandomEngine::QMCRandomEngine(const std::string& fname, bool profilerReadable)
+{ 
+    if (fname.size() != 0) profiler = new RandomProfiler(fname, profilerReadable);
+    else profiler = nullptr;
+}
 
 double QMCRandomEngine::flat(const std::source_location location)
 {
-    if (profileFilename.size() != 0) profiler.AddCall(CurrentTrackInformation::track, location);
+    if (profiler) profiler->AddCall(CurrentTrackInformation::track, location);
     return tmpEngine.flat();
 }
 
 void QMCRandomEngine::flatArray(const int size, double* vect, const std::source_location location)
 {
-    if (profileFilename.size() != 0) profiler.AddCall(CurrentTrackInformation::track, location);
+    if (profiler) profiler->AddCall(CurrentTrackInformation::track, location);
     return tmpEngine.flatArray(size, vect);
 }
 
@@ -45,4 +46,9 @@ void QMCRandomEngine::showStatus() const
 std::string QMCRandomEngine::name() const
 {
     return "QMCRandomEngine";
+}
+
+QMCRandomEngine::~QMCRandomEngine()
+{
+    if (profiler) delete profiler;
 }
