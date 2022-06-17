@@ -2,6 +2,14 @@
 
 #include "G4Exception.hh"
 
+#include <cmath>
+double nonan(double current)
+{
+    if (std::isnan(current) || current < 1e-10)
+        return 0.0;
+    return current;
+}
+
 CallEntry::CallEntry(const std::source_location& location)
 {
     bool isSpace = false;
@@ -235,11 +243,11 @@ void RandomProfiler::WriteProfiler()
                             if (readable) outFile << "\n";
                             
                             if (readable) outFile << "\t\t\t\t\t\t"; 
-                            outFile << "\"InteractionNumber\": " << step.interactionNumber << "";
+                            outFile << "\"InteractionNumber\": " << step.interactionNumber << ",";
                             if (readable) outFile << "\n";
 
                             if (readable) outFile << "\t\t\t\t\t\t"; 
-                            outFile << "\"TotalEnergy\": " << step.energy << ",";
+                            outFile << "\"TotalEnergy\": " << nonan(step.energy);
                             if (readable) outFile << "\n";
 
                             

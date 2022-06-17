@@ -9,6 +9,12 @@
 #include "G4Event.hh"
 #include "G4Track.hh"
 
+struct DyingParticleProcess
+{
+    DyingParticleProcess();
+    void die();
+};
+
 // Structure to store global informations
 struct CurrentTrackInformation
 {

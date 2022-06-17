@@ -5,7 +5,20 @@ const G4Track* CurrentTrackInformation::track = nullptr;
 std::vector<CurrentTrackInformation::NewSecondaryInformation>    CurrentTrackInformation::secondaries;
 std::vector<CurrentTrackInformation::StepInformation>      CurrentTrackInformation::stepsInformation;
 
-CurrentTrackInformation::StepInformation CurrentTrackInformation::globalStepInformations;
+CurrentTrackInformation::StepInformation CurrentTrackInformation::globalStepInformations = {0, 0};
+
+#include "Randomize.hh"
+
+DyingParticleProcess::DyingParticleProcess()
+{
+    die();
+}
+
+void DyingParticleProcess::die()
+{
+    CurrentTrackInformation::globalStepInformations.interactionNumber ++;
+    volatile double ignored = G4UniformRand();
+}
 
 CurrentTrackInformationAction::CurrentTrackInformationAction() 
 { 
@@ -55,6 +68,7 @@ void CurrentTrackInformationAction::PreUserTrackingAction(const G4Track* track)
 void CurrentTrackInformationAction::PostUserTrackingAction(const G4Track* track)
 {
     ((void) track);
+    DyingParticleProcess();
     CurrentTrackInformation::track = nullptr;
 }
 
