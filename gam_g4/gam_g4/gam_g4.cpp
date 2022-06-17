@@ -83,6 +83,8 @@ void init_G4ProductionCutsTable(py::module &);
 
 void init_G4ProductionCuts(py::module &);
 
+void init_CustomPhysicsList(py::module& );
+
 // geometry/management
 void init_G4VSolid(py::module &);
 
@@ -403,4 +405,5 @@ PYBIND11_MODULE(gam_g4, m) {
 
 
     init_QMC(m);
+    init_CustomPhysicsList(m);
 }

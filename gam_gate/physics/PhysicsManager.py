@@ -1,5 +1,7 @@
 import gam_gate as gam
 import gam_g4 as g4
+import gam_g4.gam_g4.phlist as phlist
+
 from box import Box
 from anytree import LevelOrderIter
 
@@ -115,6 +117,13 @@ class PhysicsManager:
         # Select the Physic List: check if simple ones
         if pl_name.startswith('G4'):
             self.g4_physic_list = gam.create_modular_physics_list(pl_name)
+        elif pl_name == phlist.LimittedPhlist:
+            self.g4_physic_list = gam.create_custom_phlist({
+                "log": 0, "name": "", "maxSteps": 1000, "processes": 
+                {
+                    "Compton": phlist.ProcessLimits(2, phlist.DisabledBehavior.INFINITE)
+                }
+            })
         else:
             # If not, select the Physic List from the Factory
             factory = g4.G4PhysListFactory()

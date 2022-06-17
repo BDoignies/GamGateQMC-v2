@@ -1,3 +1,4 @@
+from inspect import getargvalues
 from box import Box
 import gam_gate as gam
 import gam_g4 as g4
@@ -110,4 +111,20 @@ def create_modular_physics_list(pl_name):
     # Create the class
     b = gam.create_modular_physics_list_class(a)
     # Create the object
+    return b()
+
+
+def create_custom_phlist(params):
+    def custom_ctr(self):
+        g4.G4VModularPhysicsList.__init__(self)
+        self.p = self.pl_class(**params)
+        self.RegisterPhysics(self.p)
+
+    a = getattr(sys.modules['gam_g4.gam_g4.phlist'], 'LimittedPhysicList')
+    b = type(a.__name__,
+            (g4.G4VModularPhysicsList,),
+            {'pl_class': a,
+            '__init__': custom_ctr,
+            '__del__':  modular_physics_list_destructor})
+
     return b()

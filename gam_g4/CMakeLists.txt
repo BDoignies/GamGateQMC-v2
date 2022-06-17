@@ -72,6 +72,7 @@ file(GLOB all_SRCS
         "${PROJECT_SOURCE_DIR}/gam_g4/g4_bindings/*.cpp"
         "${PROJECT_SOURCE_DIR}/gam_g4/gam_lib/*.cpp"
         "${PROJECT_SOURCE_DIR}/gam_g4/gam_lib/QMC/*.cpp"
+        "${PROJECT_SOURCE_DIR}/gam_g4/gam_lib/Physics/*.cpp"
         )
 pybind11_add_module(gam_g4
         #NO_EXTRAS
