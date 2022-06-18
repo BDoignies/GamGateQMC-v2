@@ -112,6 +112,28 @@ void init_QMC(py::module& m)
     >(qmc, "CurrentStepInformationAction")
         .def(py::init());
 
+    // Base class
+
+    py::class_<Sampler, PySampler>(qmc, "Sampler")
+    .def(py::init<std::string>(), py::arg("name"))
+    .def("SetSeed", &Sampler::SetSeed)
+    .def("Whitenoise", &Sampler::Whitenoise)
+    .def("GetName", &Sampler::GetName)
+    .def("Sample", &Sampler::Sample);
+
+    // DimensionProvider
+    py::class_<DimensionProvider, PyDimensionProvider>(qmc, "DimensionProvider")
+        .def(py::init<std::string>(), py::arg("name"))
+        .def("GetName", &DimensionProvider::GetName)
+        .def("GetCurrentDimension", &DimensionProvider::GetCurrentDimension);
+
+
+    // PointIDProvider
+    py::class_<PointIDProvider, PyPointIDProvider>(qmc, "PointIDProvider")
+        .def(py::init<std::string>(), py::arg("name"))
+        .def("GetName", &PointIDProvider::GetName)
+        .def("GetCurrentPointID", &PointIDProvider::GetCurrentPointID);    
+
     // Samplers
 
     py::class_<WhiteNoiseSampler, Sampler>(qmc, "WhitenoiseSampler")
