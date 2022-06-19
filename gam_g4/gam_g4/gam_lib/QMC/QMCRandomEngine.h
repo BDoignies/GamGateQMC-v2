@@ -10,8 +10,16 @@
 #include "RandomStatistics.h"
 #include "RandomProfiler.h"
 
+#include "Sampler.h"
+#include "DimensionProvider.h"
+#include "PointIDProvider.h"
+
 struct QMCRandomEngineParameters
 {
+    Sampler*           sampler = nullptr;
+    DimensionProvider* dimProvider = nullptr;
+    PointIDProvider*    idProvider = nullptr;
+
     std::string profilerOutput = "";
     bool profilerReadable = false;
 
@@ -41,6 +49,10 @@ public:
 private:
     RandomProfiler* profiler;
     RandomStatistics* statistics;
+
+    Sampler* sampler;
+    DimensionProvider* dimProvider;
+    PointIDProvider* idProvider;
 
     CLHEP::MixMaxRng tmpEngine;
 };

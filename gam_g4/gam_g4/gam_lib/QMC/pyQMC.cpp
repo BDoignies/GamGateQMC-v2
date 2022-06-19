@@ -93,11 +93,11 @@ public:
 void init_Sampling(py::module& qmc)
 {  
     py::class_<Sampler, PySampler>(qmc, "Sampler")
-    .def(py::init<std::string>(), py::arg("name"))
-    .def("SetSeed", &Sampler::SetSeed)
-    .def("Whitenoise", &Sampler::Whitenoise)
-    .def("GetName", &Sampler::GetName)
-    .def("Sample", &Sampler::Sample);
+        .def(py::init<std::string>(), py::arg("name"))
+        .def("SetSeed", &Sampler::SetSeed)
+        .def("Whitenoise", &Sampler::Whitenoise)
+        .def("GetName", &Sampler::GetName)
+        .def("Sample", &Sampler::Sample);
 
     // DimensionProvider
     py::class_<DimensionProvider, PyDimensionProvider>(qmc, "DimensionProvider")
@@ -163,16 +163,19 @@ void init_QMC(py::module& m)
             py::arg("file"), py::arg("readable") = false
         );
 
-    py::class_<QMCRandomEngineParameters>(qmc, "Parameters")
+    py::class_<QMCRandomEngineParameters, std::unique_ptr<QMCRandomEngineParameters, py::nodelete>>(qmc, "Parameters")
         .def(py::init<>())
         .def_readwrite("profilerOutput"  , &QMCRandomEngineParameters::profilerOutput)
         .def_readwrite("profilerReadable", &QMCRandomEngineParameters::profilerReadable)
-        .def_readwrite("statsOutput", &QMCRandomEngineParameters::statsOutput);
+        .def_readwrite("statsOutput", &QMCRandomEngineParameters::statsOutput)
+        .def_readwrite("sampler", &QMCRandomEngineParameters::sampler)
+        .def_readwrite("dimProvider", &QMCRandomEngineParameters::dimProvider)
+        .def_readwrite("idProvider", &QMCRandomEngineParameters::idProvider);
 
     py::class_<
         QMCRandomEngine, 
-        CLHEP::HepRandomEngine 
-        // std::unique_ptr<QMCRandomEngine, py::nodelete>
+        CLHEP::HepRandomEngine,
+        std::unique_ptr<QMCRandomEngine, py::nodelete>
     >(qmc, EngineName)
         .def(py::init<QMCRandomEngineParameters>(),
              py::arg("params")

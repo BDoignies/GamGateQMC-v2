@@ -16,6 +16,10 @@ QMCRandomEngine::QMCRandomEngine(const QMCRandomEngineParameters& params)
 { 
     profiler = params.profiler();
     statistics = params.statistics();
+
+    sampler = params.sampler;
+    dimProvider = params.dimProvider;
+    idProvider = params.idProvider;
 }
 
 double QMCRandomEngine::flat(const std::source_location location)
@@ -23,15 +27,27 @@ double QMCRandomEngine::flat(const std::source_location location)
     if (profiler) profiler->AddCall(CurrentTrackInformation::track, location);
     if (statistics) statistics->AddCall(location, 1);
 
-    return tmpEngine.flat();
+    DimensionCount d = dimProvider->GetCurrentDimension();
+    PointCount i = idProvider->GetCurrentPointID(d);
+    SampleType s = sampler->Sample(i, d);
+
+    return s;
 }
 
 void QMCRandomEngine::flatArray(const int size, double* vect, const std::source_location location)
 {
     if (profiler) profiler->AddCall(CurrentTrackInformation::track, location);
     if (statistics) statistics->AddCall(location, size);
-    
-    return tmpEngine.flatArray(size, vect);
+ 
+    // Do not call flat() for stat computation   
+    for (int k = 0; k < size; k++)
+    {
+        DimensionCount d = dimProvider->GetCurrentDimension();
+        PointCount i = idProvider->GetCurrentPointID(d);
+        SampleType s = sampler->Sample(i, d);
+
+        vect[k] = s;
+    }
 }
 
 void QMCRandomEngine::setSeed(long seed, int n)
@@ -66,6 +82,6 @@ std::string QMCRandomEngine::name() const
 
 QMCRandomEngine::~QMCRandomEngine()
 {
-    if (profiler) delete profiler;
-    if (statistics) delete statistics;
+    // if (profiler) delete profiler;
+    // if (statistics) delete statistics;
 }

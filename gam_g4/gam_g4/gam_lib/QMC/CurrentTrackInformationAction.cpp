@@ -78,7 +78,7 @@ CurrentStepInformationAction::CurrentStepInformationAction()
 void CurrentStepInformationAction::UserSteppingAction(const G4Step* step)
 {
     if (step == nullptr) return;
-    // if (step->GetTrack() == nullptr) return;
+    if (step->GetTrack() == nullptr) return;
     // const G4Track* track = step->GetTrack();
 
     // A bounce is defined as a changement in track momentum (either direction and/or momentum)
