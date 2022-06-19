@@ -6,12 +6,25 @@
 #include <CLHEP/Random/RandomEngine.h>
 
 #include "CurrentTrackInformationAction.h"
+
+#include "RandomStatistics.h"
 #include "RandomProfiler.h"
+
+struct QMCRandomEngineParameters
+{
+    std::string profilerOutput = "";
+    bool profilerReadable = false;
+
+    std::string statsOutput = "";
+
+    RandomProfiler* profiler() const;
+    RandomStatistics* statistics() const;
+};
 
 class QMCRandomEngine : public CLHEP::HepRandomEngine
 {
 public:
-    QMCRandomEngine(const std::string& profileOutput = "", bool profileReadable = false);
+    QMCRandomEngine(const QMCRandomEngineParameters& params);
 
     double flat(const std::source_location location = std::source_location::current()) override;
     void flatArray(const int size, double* vect, const std::source_location location = std::source_location::current()) override;
@@ -27,5 +40,7 @@ public:
     ~QMCRandomEngine();
 private:
     RandomProfiler* profiler;
+    RandomStatistics* statistics;
+
     CLHEP::MixMaxRng tmpEngine;
 };

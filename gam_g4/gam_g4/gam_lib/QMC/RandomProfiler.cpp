@@ -81,38 +81,59 @@ RandomProfiler::RandomProfiler(const std::string& outFilename, bool r)
 {
     readable = r;
     isNewPrimaryTrack = true;
-    outFile.open(outFilename);
 
+    outFile.open(outFilename);
     if (!outFile.is_open())
     {
         std::string msg = "[RandomProfiler]: Can not open file " + outFilename + ", the profiler will not output its results";
         G4Exception(
             __FILE__, __PRETTY_FUNCTION__, 
-            G4ExceptionSeverity::JustWarning, msg.c_str()
+            G4ExceptionSeverity::FatalErrorInArgument, msg.c_str()
         );
     }
 }
 
+
+
 void RandomProfiler::AddCall(const G4Track* track, const std::source_location& location)
 {
-    if (track != nullptr) // Ignore primaries
+    if (track != nullptr) 
     {
-        isNewPrimaryTrack = true;
-        auto& lastEntry = primaryTracks.back().back();
-        if (lastEntry.trackID == track->GetTrackID())
+        // Case where the primary particles do not require sampling
+        // Use isNewPrimaryTrack + globalStepNumber
+        //     - A new track is when the global Step Number went above 1 and is back to 1
+        //     - isNewPrimaryTrack required because multiple sampling can be done at step 1
+        if ((isNewPrimaryTrack && CurrentTrackInformation::globalStepInformations.stepNumber == 1) || primaryTracks.size() == 0)
         {
-            lastEntry.calls.push_back(CallEntry(location));
-            lastEntry.steps.push_back(StepEntry(track->GetStep()));
-        }
-        else
-        {
-            primaryTracks.back().push_back({
+            isNewPrimaryTrack = false;
+            primaryTracks.push_back({{
                 track->GetTrackID(),
                 track->GetParentID(),
                 track->GetParticleDefinition()->GetParticleName(),
                 { CallEntry(location) },
                 { StepEntry(track->GetStep()) }
-            });
+            }});
+        }
+        else
+        {   
+            isNewPrimaryTrack = (CurrentTrackInformation::globalStepInformations.stepNumber != 1);
+            
+            auto& lastEntry = primaryTracks.back().back();
+            if (lastEntry.trackID == track->GetTrackID())
+            {
+                lastEntry.calls.push_back(CallEntry(location));
+                lastEntry.steps.push_back(StepEntry(track->GetStep()));
+            }
+            else
+            {
+                primaryTracks.back().push_back({
+                    track->GetTrackID(),
+                    track->GetParentID(),
+                    track->GetParticleDefinition()->GetParticleName(),
+                    { CallEntry(location) },
+                    { StepEntry(track->GetStep()) }
+                });
+            }
         }
     }
     else
@@ -139,8 +160,6 @@ void RandomProfiler::AddCall(const G4Track* track, const std::source_location& l
 
 void RandomProfiler::WriteProfiler()
 {
-    if (!outFile.is_open()) return;
-
     outFile << "{"; 
     if (readable) outFile << "\n";
     if (readable) outFile << "\t"; 

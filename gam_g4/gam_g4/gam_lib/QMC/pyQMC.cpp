@@ -14,6 +14,9 @@ namespace py = pybind11;
 
 #include "SamplerFromFile.h"
 
+#include "RandomProfiler.h"
+#include "RandomStatistics.h"
+
 class PySampler : public Sampler
 {
 public:
@@ -87,33 +90,8 @@ public:
     }
 };
 
-void init_QMC(py::module& m)
-{
-    auto qmc = m.def_submodule("qmc");
-    
-    // Name of random engine class
-    const char* EngineName = "QMCRandomEngine";
-    qmc.attr("QMCEngine") = py::str(EngineName);
-
-    py::class_<
-        QMCRandomEngine, 
-        CLHEP::HepRandomEngine 
-        // std::unique_ptr<QMCRandomEngine, py::nodelete>
-    >(qmc, EngineName)
-        .def(py::init<std::string, bool>(),
-             py::arg("profilerFilename") = std::string(""),
-             py::arg("profilerReadable") = false
-        );
-
-    py::class_<
-        CurrentStepInformationAction,
-        G4UserSteppingAction,
-        std::unique_ptr<CurrentStepInformationAction, py::nodelete>
-    >(qmc, "CurrentStepInformationAction")
-        .def(py::init());
-
-    // Base class
-
+void init_Sampling(py::module& qmc)
+{  
     py::class_<Sampler, PySampler>(qmc, "Sampler")
     .def(py::init<std::string>(), py::arg("name"))
     .def("SetSeed", &Sampler::SetSeed)
@@ -150,4 +128,53 @@ void init_QMC(py::module& m)
 
     py::class_<WhitenoiseDimensionProvider, DimensionProvider>(qmc, "WhitenoiseDimensionProvider")
         .def(py::init<>());
+}
+
+void init_QMC(py::module& m)
+{
+    auto qmc = m.def_submodule("qmc");
+    
+    // Name of random engine class
+    const char* EngineName = "QMCRandomEngine";
+    qmc.attr("QMCEngine") = py::str(EngineName);
+
+
+    // Global class
+
+    py::class_<
+        CurrentStepInformationAction,
+        G4UserSteppingAction,
+        std::unique_ptr<CurrentStepInformationAction, py::nodelete>
+    >(qmc, "CurrentStepInformationAction")
+        .def(py::init());
+
+
+    init_Sampling(qmc);
+
+    // Base class    
+
+    py::class_<RandomStatistics>(qmc, "Statistics")
+        .def(py::init<const std::string&>(),
+            py::arg("file")
+        );
+
+    py::class_<RandomProfiler>(qmc, "Profiler")
+        .def(py::init<const std::string&, bool>(),
+            py::arg("file"), py::arg("readable") = false
+        );
+
+    py::class_<QMCRandomEngineParameters>(qmc, "Parameters")
+        .def(py::init<>())
+        .def_readwrite("profilerOutput"  , &QMCRandomEngineParameters::profilerOutput)
+        .def_readwrite("profilerReadable", &QMCRandomEngineParameters::profilerReadable)
+        .def_readwrite("statsOutput", &QMCRandomEngineParameters::statsOutput);
+
+    py::class_<
+        QMCRandomEngine, 
+        CLHEP::HepRandomEngine 
+        // std::unique_ptr<QMCRandomEngine, py::nodelete>
+    >(qmc, EngineName)
+        .def(py::init<QMCRandomEngineParameters>(),
+             py::arg("params")
+        );
 }

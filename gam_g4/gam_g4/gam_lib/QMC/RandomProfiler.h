@@ -54,11 +54,12 @@ public:
 
     ~RandomProfiler();
 private:
+    void Open();
     void WriteProfiler();
 private:
     bool readable;
-    std::ofstream outFile;
-
     bool isNewPrimaryTrack;
+
+    std::ofstream outFile;
     std::vector<std::vector<TrackEntry>> primaryTracks;
 };
