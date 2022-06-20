@@ -31,7 +31,7 @@ public:
 
 	RandomStatistics(const std::string& fname);
 
-	void AddCall(const std::source_location& location, unsigned int n);
+	void AddCall(unsigned int n);
 	void Write();
 
 	~RandomStatistics();

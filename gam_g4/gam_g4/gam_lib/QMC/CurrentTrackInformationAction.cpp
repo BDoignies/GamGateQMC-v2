@@ -3,10 +3,23 @@
 
 const G4Track* CurrentTrackInformation::track = nullptr;
 
+std::source_location CurrentTrackInformation::currentLocation;
+std::string CurrentTrackInformation::currentClassName;
+std::string CurrentTrackInformation::currentFuncName;
+
 std::vector<CurrentTrackInformation::NewSecondaryInformation>    CurrentTrackInformation::secondaries;
 std::vector<CurrentTrackInformation::StepInformation>      CurrentTrackInformation::stepsInformation;
 
 CurrentTrackInformation::StepInformation CurrentTrackInformation::globalStepInformations = {0, 0};
+
+void CurrentTrackInformation::SetLocation(const std::source_location& location)
+{
+    CurrentTrackInformation::currentLocation = location;
+    ParseSourceLocation(location, 
+        CurrentTrackInformation::currentClassName,
+        CurrentTrackInformation::currentFuncName
+    );
+}
 
 #include "Randomize.hh"
 

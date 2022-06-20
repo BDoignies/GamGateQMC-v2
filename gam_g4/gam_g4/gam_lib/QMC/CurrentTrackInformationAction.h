@@ -1,6 +1,8 @@
 #pragma once
 
-#include <list>
+#include <source_location>
+#include "QMC_utils.h"
+
 
 #include "G4UserTrackingAction.hh"
 #include "G4UserSteppingAction.hh"
@@ -32,6 +34,13 @@ struct CurrentTrackInformation
         const G4Track* track;
         const StepInformation stepInfos;   
     };
+    
+    // Current call information
+    static std::source_location currentLocation;
+    static std::string currentClassName;
+    static std::string currentFuncName;
+
+    static void SetLocation(const std::source_location& location);
 
     // Current track
     static const G4Track* track;

@@ -19,8 +19,11 @@ RandomStatistics::RandomStatistics(const std::string& fname)
     }	
 }
 
-void RandomStatistics::AddCall(const std::source_location& location, unsigned int n)
+#include "CurrentTrackInformationAction.h"
+void RandomStatistics::AddCall(unsigned int n)
 {
+	const std::source_location& location = CurrentTrackInformation::currentLocation;
+
 	const std::string name = formatter(
 		location.file_name(), location.function_name(),
 		location.line(), location.column()

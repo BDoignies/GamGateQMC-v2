@@ -10,46 +10,14 @@ double nonan(double current)
     return current;
 }
 
-CallEntry::CallEntry(const std::source_location& location, unsigned int c)
+#include "QMC_utils.h"
+
+CallEntry::CallEntry(unsigned int c)
 {
-    bool isSpace = false;
-    bool isScope = false;
+    const std::source_location& location = CurrentTrackInformation::currentLocation;
 
-    std::size_t beginClassName = 0;
-    std::size_t endClassName = 0;
-    std::size_t beginFuncName = 0;
-    std::size_t endFuncName = 0;
-
-    const std::string functionName = location.function_name();
-    for (std::size_t i = 0; i < functionName.size(); i++)
-    {
-        if (functionName[i] == ' ')
-        {
-            isSpace = true;
-            beginClassName = i + 1;
-        }
-        else if (functionName[i] == ':' && isSpace)
-        {
-            isScope = true;
-            beginFuncName = i + 2;
-            endClassName = i;
-            i++;
-        }
-        else if (functionName[i] == '(')
-        {
-            endFuncName = i;
-            break;
-        }
-    }
-
-    if (!isScope)
-    {
-        beginFuncName = beginClassName;
-        endClassName  = beginClassName;
-    }
-
-    className = std::string(functionName, beginClassName, endClassName - beginClassName);
-    funcName  = std::string(functionName, beginFuncName , endFuncName - beginFuncName);
+    className = CurrentTrackInformation::currentClassName;
+    funcName = CurrentTrackInformation::currentFuncName;
     line = location.line();
     col = location.column();
     count = c;
@@ -96,8 +64,9 @@ RandomProfiler::RandomProfiler(const std::string& outFilename, bool r)
 
 
 
-void RandomProfiler::AddCall(const G4Track* track, const std::source_location& location, unsigned int count)
+void RandomProfiler::AddCall(unsigned int count)
 {
+    const G4Track* track = CurrentTrackInformation::track;
     if (track != nullptr) 
     {
         // Case where the primary particles do not require sampling
@@ -111,7 +80,7 @@ void RandomProfiler::AddCall(const G4Track* track, const std::source_location& l
                 track->GetTrackID(),
                 track->GetParentID(),
                 track->GetParticleDefinition()->GetParticleName(),
-                { CallEntry(location, count) },
+                { CallEntry(count) },
                 { StepEntry(track->GetStep()) }
             }});
         }
@@ -122,7 +91,7 @@ void RandomProfiler::AddCall(const G4Track* track, const std::source_location& l
             auto& lastEntry = primaryTracks.back().back();
             if (lastEntry.trackID == track->GetTrackID())
             {
-                lastEntry.calls.push_back(CallEntry(location, count));
+                lastEntry.calls.push_back(CallEntry(count));
                 lastEntry.steps.push_back(StepEntry(track->GetStep()));
             }
             else
@@ -131,7 +100,7 @@ void RandomProfiler::AddCall(const G4Track* track, const std::source_location& l
                     track->GetTrackID(),
                     track->GetParentID(),
                     track->GetParticleDefinition()->GetParticleName(),
-                    { CallEntry(location, count) },
+                    { CallEntry(count) },
                     { StepEntry(track->GetStep()) }
                 });
             }
@@ -145,7 +114,7 @@ void RandomProfiler::AddCall(const G4Track* track, const std::source_location& l
                 0,
                 -1,
                 "",
-                { CallEntry(location, count) },
+                { CallEntry(count) },
                 { StepEntry(nullptr) }
             }});
             isNewPrimaryTrack = false;
@@ -153,7 +122,7 @@ void RandomProfiler::AddCall(const G4Track* track, const std::source_location& l
         else
         {
             auto& lastEntry = primaryTracks.back().back();
-            lastEntry.calls.push_back(CallEntry(location, count));
+            lastEntry.calls.push_back(CallEntry(count));
             lastEntry.steps.push_back(StepEntry(nullptr));
         }
     }
