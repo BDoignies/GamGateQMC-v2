@@ -11,12 +11,13 @@
 
 struct CallEntry
 {
-    CallEntry(const std::source_location& location);
+    CallEntry(const std::source_location& location, unsigned int count);
     
     std::string  className;
     std::string  funcName;
     unsigned int     line;
     unsigned int      col;
+    unsigned int    count;
 };
 
 struct StepEntry
@@ -50,7 +51,7 @@ class RandomProfiler
 public:
     RandomProfiler(const std::string& outFilename, bool readable = false);
 
-    void AddCall(const G4Track* track, const std::source_location& location);
+    void AddCall(const G4Track* track, const std::source_location& location, unsigned int count);
 
     ~RandomProfiler();
 private:

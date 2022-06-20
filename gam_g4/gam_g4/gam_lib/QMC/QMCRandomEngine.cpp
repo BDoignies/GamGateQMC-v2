@@ -24,7 +24,7 @@ QMCRandomEngine::QMCRandomEngine(const QMCRandomEngineParameters& params)
 
 double QMCRandomEngine::flat(const std::source_location location)
 {
-    if (profiler) profiler->AddCall(CurrentTrackInformation::track, location);
+    if (profiler) profiler->AddCall(CurrentTrackInformation::track, location, 1);
     if (statistics) statistics->AddCall(location, 1);
 
     DimensionCount d = dimProvider->GetCurrentDimension();
@@ -36,7 +36,7 @@ double QMCRandomEngine::flat(const std::source_location location)
 
 void QMCRandomEngine::flatArray(const int size, double* vect, const std::source_location location)
 {
-    if (profiler) profiler->AddCall(CurrentTrackInformation::track, location);
+    if (profiler) profiler->AddCall(CurrentTrackInformation::track, location, size);
     if (statistics) statistics->AddCall(location, size);
  
     // Do not call flat() for stat computation   
@@ -82,6 +82,6 @@ std::string QMCRandomEngine::name() const
 
 QMCRandomEngine::~QMCRandomEngine()
 {
-    // if (profiler) delete profiler;
-    // if (statistics) delete statistics;
+    if (profiler) delete profiler;
+    if (statistics) delete statistics;
 }

@@ -10,7 +10,7 @@ double nonan(double current)
     return current;
 }
 
-CallEntry::CallEntry(const std::source_location& location)
+CallEntry::CallEntry(const std::source_location& location, unsigned int c)
 {
     bool isSpace = false;
     bool isScope = false;
@@ -52,6 +52,7 @@ CallEntry::CallEntry(const std::source_location& location)
     funcName  = std::string(functionName, beginFuncName , endFuncName - beginFuncName);
     line = location.line();
     col = location.column();
+    count = c;
 }
 
 StepEntry::StepEntry(const G4Step* step)
@@ -95,7 +96,7 @@ RandomProfiler::RandomProfiler(const std::string& outFilename, bool r)
 
 
 
-void RandomProfiler::AddCall(const G4Track* track, const std::source_location& location)
+void RandomProfiler::AddCall(const G4Track* track, const std::source_location& location, unsigned int count)
 {
     if (track != nullptr) 
     {
@@ -110,7 +111,7 @@ void RandomProfiler::AddCall(const G4Track* track, const std::source_location& l
                 track->GetTrackID(),
                 track->GetParentID(),
                 track->GetParticleDefinition()->GetParticleName(),
-                { CallEntry(location) },
+                { CallEntry(location, count) },
                 { StepEntry(track->GetStep()) }
             }});
         }
@@ -121,7 +122,7 @@ void RandomProfiler::AddCall(const G4Track* track, const std::source_location& l
             auto& lastEntry = primaryTracks.back().back();
             if (lastEntry.trackID == track->GetTrackID())
             {
-                lastEntry.calls.push_back(CallEntry(location));
+                lastEntry.calls.push_back(CallEntry(location, count));
                 lastEntry.steps.push_back(StepEntry(track->GetStep()));
             }
             else
@@ -130,7 +131,7 @@ void RandomProfiler::AddCall(const G4Track* track, const std::source_location& l
                     track->GetTrackID(),
                     track->GetParentID(),
                     track->GetParticleDefinition()->GetParticleName(),
-                    { CallEntry(location) },
+                    { CallEntry(location, count) },
                     { StepEntry(track->GetStep()) }
                 });
             }
@@ -144,7 +145,7 @@ void RandomProfiler::AddCall(const G4Track* track, const std::source_location& l
                 0,
                 -1,
                 "",
-                { CallEntry(location) },
+                { CallEntry(location, count) },
                 { StepEntry(nullptr) }
             }});
             isNewPrimaryTrack = false;
@@ -152,7 +153,7 @@ void RandomProfiler::AddCall(const G4Track* track, const std::source_location& l
         else
         {
             auto& lastEntry = primaryTracks.back().back();
-            lastEntry.calls.push_back(CallEntry(location));
+            lastEntry.calls.push_back(CallEntry(location, count));
             lastEntry.steps.push_back(StepEntry(nullptr));
         }
     }
@@ -224,9 +225,13 @@ void RandomProfiler::WriteProfiler()
                                 if (readable) outFile << "\n";
 
                                 if (readable) outFile << "\t\t\t\t\t\t"; 
-                                outFile << "\"Column\": "      << call.col       <<   ""; 
+                                outFile << "\"Column\": "      << call.col       <<   ","; 
                                 if (readable) outFile << "\n";
                                 
+                                if (readable) outFile << "\t\t\t\t\t\t"; 
+                                outFile << "\"Count\": "      << call.count      <<   ""; 
+                                if (readable) outFile << "\n";
+
                             if (readable) outFile << "\t\t\t\t\t"; 
                                 outFile << "}";
                             

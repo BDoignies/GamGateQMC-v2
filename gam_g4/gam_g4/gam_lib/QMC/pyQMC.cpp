@@ -174,8 +174,8 @@ void init_QMC(py::module& m)
 
     py::class_<
         QMCRandomEngine, 
-        CLHEP::HepRandomEngine,
-        std::unique_ptr<QMCRandomEngine, py::nodelete>
+        CLHEP::HepRandomEngine
+        // , std::unique_ptr<QMCRandomEngine, py::nodelete>
     >(qmc, EngineName)
         .def(py::init<QMCRandomEngineParameters>(),
              py::arg("params")
