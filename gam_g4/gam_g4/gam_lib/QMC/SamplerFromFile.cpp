@@ -19,16 +19,16 @@ double SamplerFromFile::Sample(PointCount i, DimensionCount d_)
             G4ExceptionSeverity::FatalErrorInArgument, msg.c_str()
         );
     }
-
+    
     return data[i * d + d_];
 }
 
 void SamplerFromFile::Read(const std::string& filename)
 {
-    std::ifstream file;
+    std::ifstream file(filename);
     if (!file.is_open())
     {
-        std::string msg = "[SamplerFromFile]: Can not open file " + filename + ", the profiler will not output its results";
+        std::string msg = "[SamplerFromFile]: Can not open file " + filename + "";
         G4Exception(
             __FILE__, __PRETTY_FUNCTION__, 
             G4ExceptionSeverity::FatalErrorInArgument, msg.c_str()

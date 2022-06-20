@@ -1,4 +1,5 @@
 #include "CurrentTrackInformationAction.h"
+#include "G4SteppingManager.hh"
 
 const G4Track* CurrentTrackInformation::track = nullptr;
 
@@ -79,6 +80,9 @@ void CurrentStepInformationAction::UserSteppingAction(const G4Step* step)
 {
     if (step == nullptr) return;
     if (step->GetTrack() == nullptr) return;
+
+    // This does not work because the value is updated too late for some sampled numbers
+    // const G4VProcess* currentProcess = fpSteppingManager->GetfCurrentProcess();
     // const G4Track* track = step->GetTrack();
 
     // A bounce is defined as a changement in track momentum (either direction and/or momentum)

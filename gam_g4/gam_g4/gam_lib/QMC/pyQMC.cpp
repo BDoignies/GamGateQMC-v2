@@ -117,6 +117,9 @@ void init_Sampling(py::module& qmc)
     py::class_<WhiteNoiseSampler, Sampler>(qmc, "WhitenoiseSampler")
         .def(py::init());
 
+    py::class_<SamplerFromFile, Sampler>(qmc, "SamplerFromFile")
+        .def(py::init<const std::string&, PointCount, DimensionCount>());
+
     // Point ID Providers
 
     py::class_<DefaultPointIDProvider, PointIDProvider, PyDefaultPointIDProvider>(qmc, "DefaultPointIDProvider")
