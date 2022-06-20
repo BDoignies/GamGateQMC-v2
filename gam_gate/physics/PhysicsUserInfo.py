@@ -25,6 +25,10 @@ class PhysicsUserInfo:
 
         # special case for EM parameters -> G4 object
         self.g4_em_parameters = g4.G4EmParameters.Instance()
+        
+        self.physics_list_limitations = {}
+        self.physics_list_global_limit = 1000
+
 
     def __del__(self):
         pass

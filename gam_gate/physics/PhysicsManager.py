@@ -1,3 +1,4 @@
+from concurrent.futures import process
 import gam_gate as gam
 import gam_g4 as g4
 import gam_g4.gam_g4.phlist as phlist
@@ -118,11 +119,12 @@ class PhysicsManager:
         if pl_name.startswith('G4'):
             self.g4_physic_list = gam.create_modular_physics_list(pl_name)
         elif pl_name == phlist.LimittedPhlist:
+            global_limits  = self.user_info.physics_list_global_limit
+            process_limits = self.user_info.physics_list_limitations
+
             self.g4_physic_list = gam.create_custom_phlist({
-                "log": 0, "name": "", "maxSteps": 1000, "processes": 
-                {
-                    "Compton": phlist.ProcessLimits(2, phlist.DisabledBehavior.INFINITE)
-                }
+                "log": 1, "name": "", "maxSteps": global_limits,
+                "processes": process_limits
             })
         else:
             # If not, select the Physic List from the Factory
