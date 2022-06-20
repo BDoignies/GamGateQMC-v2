@@ -13,6 +13,10 @@ double SamplerFromFile::Sample(PointCount i, DimensionCount d_)
 {
     if (i >= n || d_ >= d)
     {
+        if (d_ == UNKNOWN_DIMENSION) return Whitenoise();
+        if (i  == UNKNOWN_POINTID)   return Whitenoise();
+
+        // Exceeding dimension or number of point
         std::string msg = "[SamplerFromFile]: Can not sample point (" + std::to_string(i) + ", " + std::to_string(d_) + ")";
         G4Exception(
             __FILE__, __PRETTY_FUNCTION__, 
