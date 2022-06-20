@@ -22,27 +22,53 @@ else:
     from tqdm import tqdm
 
 class StatCalculator:
-    def __init__(self):
+    def __init__(self, simple=False):
         self.sum = 0
+        
+        self.stored = []
+        self.sum_squared = 0
+        self.min = 0
+        self.max = 0
+        
+        self.simple = simple
+        
         self.count = 0
         self.is_next = True
     
+    def add_stat(self, value):
+        self.sum += value
+        self.stored.append(value)
+       
     def add(self, value=1, requires_next=False):
         if requires_next:
             if self.is_next:
                 self.is_next = False
-                self.sum += value
+                self.add_stat(value)
         else:
-            self.sum += value
+            self.add_stat(value)
         
     def next_compute(self):
         self.count += 1
         self.is_next = True
         
+        current_sum = sum(self.stored)
+        self.min = min(self.min, min(self.stored))
+        self.max = max(self.max, max(self.stored))
+        
+        self.sum_squared += current_sum * current_sum
+        self.stored = []
+        
     def get_stat(self):
         p = self.sum / self.count
-        return p
-    
+        if self.simple:
+            return f"{p:.2f}"
+        
+        # TODO Welford's algorithm
+        var = self.sum_squared / self.count - p * p
+        std = 1.96 * math.sqrt(var)
+        return f"{p:.2f} +/- {std:.2f}"
+
+        
     def __repr__(self):
         p = self.get_stat()
         return f"(prop={p})"
@@ -126,6 +152,7 @@ def break_chain_by_interaction(chain, steps):
     
 def compute_probas(events, energy = False, compressed = False, count = True):
     by_interaction = {}
+    count_by_chain_length = {}
     
     for i, event in tqdm(enumerate(events), desc="Event", total=len(events)):
         # print(i)
