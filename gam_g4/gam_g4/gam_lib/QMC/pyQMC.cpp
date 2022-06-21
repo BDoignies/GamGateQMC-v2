@@ -17,6 +17,11 @@ namespace py = pybind11;
 #include "RandomProfiler.h"
 #include "RandomStatistics.h"
 
+#include "Specialized/EMDimensionProvider.h"
+#include "Specialized/PartDimensionProvider.h"
+#include "Specialized/PrimaryDimensionProvider.h"
+#include "Specialized/LowEPComptonDimensionProvider.h"
+
 class PySampler : public Sampler
 {
 public:
@@ -58,6 +63,42 @@ public:
     }
 };
 
+class PyPartDimensionProvider : PartDimensionProvider
+{
+public:
+    using PartDimensionProvider::PartDimensionProvider;
+
+    bool Accept(const std::string& pn, const std::string& cn, const std::string& fn) override
+    {
+        PYBIND11_OVERRIDE_PURE(
+            bool,
+            PartDimensionProvider,
+            Accept,
+            pn,
+            cn,
+            fn
+        );
+    }
+
+    unsigned int GetMaxDimension() const
+    {
+        PYBIND11_OVERRIDE_PURE(
+            unsigned int,
+            PartDimensionProvider,
+            GetMaxDimension,
+        );
+    }
+
+    DimensionCount GetCurrentDimension() override
+    {
+        PYBIND11_OVERRIDE_PURE(
+            DimensionCount, 
+            PartDimensionProvider,
+            GetCurrentDimension
+        );
+    }
+};
+
 class PyPointIDProvider : public PointIDProvider
 {
 public:
@@ -67,7 +108,7 @@ public:
     {
         PYBIND11_OVERRIDE_PURE(
             PointCount,
-            PyPointIDProvider,
+            PointIDProvider,
             GetCurrentPointID,
             d
         );
@@ -133,6 +174,29 @@ void init_Sampling(py::module& qmc)
         .def(py::init<>());
 }
 
+void init_Specialized(py::module& qmc)
+{
+    py::class_<PartDimensionProvider, PyPartDimensionProvider>(qmc, "PartDimensionProvider")
+        .def(py::init<const std::string&>());
+
+    py::class_<EMDimensionProvider, PartDimensionProvider>(qmc, "EMDimensionProvider")
+        .def(py::init<unsigned int>());
+
+    py::class_<PrimaryDimensionProvider, PartDimensionProvider>(qmc, "PrimaryDimensionProvider")
+        .def(py::init<unsigned int>());
+    
+    
+    py::class_<LowEPComptonDimensionProvider, PartDimensionProvider>(qmc, "LowEPComptonDimensionProvider")
+        .def(
+            py::init<unsigned int, unsigned int, unsigned int>(), 
+            py::arg("MaxBounce"), py::arg("MaxPhoton"), py::arg("MaxElectron")
+        );
+
+    py::class_<TotalDimensionProvider, DimensionProvider>(qmc, "TotalDimensionProvider")
+        .def(py::init<PartDimensionProvider*, const std::vector<PartDimensionProvider*>&>())
+        .def("GetNumberOfDimensionAtBounce", &TotalDimensionProvider::GetNumberOfDimensionAtBounce);
+}
+
 void init_QMC(py::module& m)
 {
     auto qmc = m.def_submodule("qmc");
@@ -153,6 +217,7 @@ void init_QMC(py::module& m)
 
 
     init_Sampling(qmc);
+    init_Specialized(qmc);
 
     // Base class    
 

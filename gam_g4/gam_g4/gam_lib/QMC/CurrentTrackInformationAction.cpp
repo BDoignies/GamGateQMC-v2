@@ -2,6 +2,7 @@
 #include "G4SteppingManager.hh"
 
 const G4Track* CurrentTrackInformation::track = nullptr;
+const G4Event* CurrentTrackInformation::event = nullptr;
 
 std::source_location CurrentTrackInformation::currentLocation;
 std::string CurrentTrackInformation::currentClassName;
@@ -19,6 +20,12 @@ void CurrentTrackInformation::SetLocation(const std::source_location& location)
         CurrentTrackInformation::currentClassName,
         CurrentTrackInformation::currentFuncName
     );
+}
+
+int CurrentTrackInformation::GetEventID()
+{
+    if (event) return event->GetEventID();
+    return -1;
 }
 
 #include "Randomize.hh"
@@ -43,6 +50,8 @@ CurrentTrackInformationAction::CurrentTrackInformationAction()
 void CurrentTrackInformationAction::PreUserTrackingAction(const G4Track* track)
 {
     CurrentTrackInformation::track = track;
+    CurrentTrackInformation::event = G4RunManager::GetRunManager()->GetCurrentEvent();
+    
     CurrentTrackInformation::globalStepInformations = {1, 0};
     if (track == nullptr) return;
 

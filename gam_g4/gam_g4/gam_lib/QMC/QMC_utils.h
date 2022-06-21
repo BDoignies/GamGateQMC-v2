@@ -6,8 +6,10 @@ using DimensionCount = std::size_t; //< For dimension
 using PointCount = std::size_t;     //< For point ids
 using SampleType = double;          //< For samples
 
-static constexpr DimensionCount    UNKNOWN_DIMENSION = std::numeric_limits<DimensionCount>::max() - 1;
-static constexpr PointCount        UNKNOWN_POINTID   = std::numeric_limits<PointCount>::max() - 1;
+// -10000: Dimension and point count may be added, even in case of 'UNKNOWN_DIMENSION'. To avoid every check
+// a 10000 number range is allowed so that points can be added safely
+static constexpr DimensionCount    UNKNOWN_DIMENSION = std::numeric_limits<DimensionCount>::max() - 10000;
+static constexpr PointCount        UNKNOWN_POINTID   = std::numeric_limits<PointCount>::max() - 10000;
 
 #include <source_location>
 #include <string>

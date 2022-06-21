@@ -6,6 +6,7 @@
 
 #include "G4UserTrackingAction.hh"
 #include "G4UserSteppingAction.hh"
+#include "G4RunManager.hh"
 #include "G4Step.hh"
 
 #include "G4Event.hh"
@@ -41,11 +42,14 @@ struct CurrentTrackInformation
     static std::string currentFuncName;
 
     static void SetLocation(const std::source_location& location);
+    static int GetEventID();
 
     // Current track
     static const G4Track* track;
 
     // Global steps for current track
+    static const G4Event* event;
+
     static StepInformation globalStepInformations;
 
 public:
