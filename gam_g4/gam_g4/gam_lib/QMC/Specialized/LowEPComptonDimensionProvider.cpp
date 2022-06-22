@@ -12,8 +12,9 @@ unsigned int LowEPComptonDimensionProvider::GetMaxDimension() const
 {
     unsigned int count = 0;
 
+    count ++; // EmProcess::PostStepGetPhysicalInteractionLength(605)
     count ++; // EmElementSelector::SelectRandomAtom(112)
-    
+
     count += (
         1 + // LowEPComptonModel::SampleSecondaries(358)
         1 + // LowEPComptonModel::SampleSecondaries(360)
@@ -55,8 +56,10 @@ DimensionCount LowEPComptonDimensionProvider::GetCurrentDimension()
     // Everything is uniquely identified by line number, so compare against it
     // instead of string names !
 
+    // EmProcess::PostStepGetPhysicalInteractionLength(605)
+    if (line == 605) { current_loop_counter = 0; return 0; }
     // EmElementSelector::SelectRandomAtom(112)
-    if (line == 112) { current_loop_counter = 0; return 0; };
+    if (line == 112) { return 1; };
 
     // Too much loop, reject sample to whitenoise!
     const int reject_ph_wn = (current_loop_counter >= max_photon_loop);
@@ -64,19 +67,19 @@ DimensionCount LowEPComptonDimensionProvider::GetCurrentDimension()
     // 4 because at most 4 numbers in the loop 
     // reject_wn allow to rejecting number to whitenoise while leaving the 
     // opportunity to go to electron part 
-    const unsigned int photon_start = 1 + 4 * current_loop_counter + reject_ph_wn * UNKNOWN_DIMENSION;
+    const DimensionCount photon_start = 2 + 4 * current_loop_counter + reject_ph_wn * UNKNOWN_DIMENSION;
     if (line == 358) { return 0 + photon_start; };                              // LowEPComptonModel::SampleSecondaries(358)
     if (line == 360) { return 1 + photon_start; };                              // LowEPComptonModel::SampleSecondaries(360)
     if (line == 365) { return 2 + photon_start; };                              // LowEPComptonModel::SampleSecondaries(365)
     if (line == 375) { current_loop_counter ++; return 3 + photon_start; }; // LowEPComptonModel::SampleSecondaries(375)
     
-    const unsigned int photon_end = 1 + 4 * max_photon_loop;
+    const DimensionCount photon_end = 2 + 4 * max_photon_loop;
     if (line == 379) { current_loop_counter = 0; return photon_end; };        // LowEPComptonModel::SampleSecondaries(379)
 
     // Too much loop, reject sample to whitenoise!
     const int reject_el_wn = (current_loop_counter >= max_electron_loop);
 
-    const unsigned int electron_start = 1 + photon_end + 5 * current_loop_counter + reject_el_wn * UNKNOWN_DIMENSION;
+    const DimensionCount electron_start = 1 + photon_end + 5 * current_loop_counter + reject_el_wn * UNKNOWN_DIMENSION;
     if (line == 352) return 0 + electron_start;                             // ShellData::SelectRandomShell(352)
     if (line == 540) return 1 + electron_start;                             // EMDataSet::RandomSelect(540)
     if (line == 440) return 2 + electron_start;                             // LowEPComptonModel::SampleSecondaries(440)
@@ -92,12 +95,18 @@ bool LowEPComptonDimensionProvider::Accept(
             const std::string& funcName
 )
 {
-    std::cout << "LowEPComptonModel" << std::endl;
+    // std::cout << "LowEPComptonModel: " << className << std::endl;
+    const auto currentBounce = CurrentTrackInformation::globalStepInformations.interactionNumber;
+
+    // Reject on too many bounces
+    if (currentBounce >= max_bounce) return false;
+
+    if (className == "G4VEmProcess") return true;
     if (className == "G4LowEPComptonModel") return true;
     if (className == "G4EmElementSelector") return true;
     if (className == "G4ShellData") return true;
     if (className == "G4EMDataSet") return true;
 
-    std::cout << "Rejected: " << className << std::endl;
+    // std::cout << "Rejected: " << className << std::endl;
     return false;
 }

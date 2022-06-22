@@ -29,12 +29,16 @@ public:
         const std::vector<PartDimensionProvider*>& providers
     );
 
+    unsigned int GetDimensionPerBounce() const;
     unsigned int GetNumberOfDimensionAtBounce(unsigned int i) const;
 
     DimensionCount GetCurrentDimension() override;
 
     ~TotalDimensionProvider();
 private:
+    unsigned int primaryDimensionCount;
+    unsigned int dimensionPerBounce;
+
     PartDimensionProvider* primary;
     std::vector<PartDimensionProvider*> providers;
 };

@@ -25,7 +25,7 @@ public:
 
     inline PointCount GetCurrentPointID(DimensionCount d)
     {
-        if (d == UNKNOWN_DIMENSION) return UNKNOWN_POINTID;
+        if (d >= UNKNOWN_DIMENSION) return UNKNOWN_POINTID;
 
         auto it = std::find(lastDimensions.begin(), lastDimensions.end(), d);
         if (it != lastDimensions.end())

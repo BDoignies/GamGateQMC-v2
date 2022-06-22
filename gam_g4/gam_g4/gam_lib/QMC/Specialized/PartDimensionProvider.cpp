@@ -11,27 +11,33 @@ TotalDimensionProvider::TotalDimensionProvider(
     DimensionProvider("TotalDimProvider"),
     primary(prim),
     providers(p)
-{ }
+{ 
+    primaryDimensionCount = primary->GetMaxDimension();
+    dimensionPerBounce = 0;
+    for (const auto& prov : providers) dimensionPerBounce += prov->GetMaxDimension();
+}
 
 unsigned int TotalDimensionProvider::GetNumberOfDimensionAtBounce(unsigned int i) const
 {
-    unsigned int count = primary->GetMaxDimension();
-    for (const auto& prov : providers) count += prov->GetMaxDimension() * i;
-
-    return count;
+    return primaryDimensionCount + dimensionPerBounce * i;
 }
+
+unsigned int TotalDimensionProvider::GetDimensionPerBounce() const
+{
+    return dimensionPerBounce;
+}   
 
 DimensionCount TotalDimensionProvider::GetCurrentDimension()
 {
     // const std::source_location& location = CurrentTrackInformation::currentLocation;
     const std::string& className = CurrentTrackInformation::currentClassName;
     const std::string& funcName  = CurrentTrackInformation::currentFuncName;
-    unsigned int count = 0;
+    const unsigned int intNumber = CurrentTrackInformation::globalStepInformations.interactionNumber;
 
     if (primary->Accept("", className, funcName)) 
         return primary->GetCurrentDimension();
-    count += primary->GetMaxDimension();
 
+    unsigned int count = GetNumberOfDimensionAtBounce(intNumber);
     for (auto& prov : providers)
     {
         if (prov->Accept("", className, funcName)) return count + prov->GetCurrentDimension();

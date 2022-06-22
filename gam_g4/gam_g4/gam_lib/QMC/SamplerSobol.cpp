@@ -10,6 +10,7 @@ SobolSampler::SobolSampler(const std::string& dirName, DimensionCount D_, PointC
 
 SampleType SobolSampler::Sample(PointCount i, DimensionCount d)
 {
+	if (d >= UNKNOWN_DIMENSION) return Whitenoise();
 	if (i != pointID) LoadPoint(i);	
 	return point[d];
 }

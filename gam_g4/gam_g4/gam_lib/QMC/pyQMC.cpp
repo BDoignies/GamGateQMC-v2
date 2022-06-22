@@ -18,7 +18,6 @@ namespace py = pybind11;
 #include "RandomProfiler.h"
 #include "RandomStatistics.h"
 
-#include "Specialized/EMDimensionProvider.h"
 #include "Specialized/PartDimensionProvider.h"
 #include "Specialized/PrimaryDimensionProvider.h"
 #include "Specialized/LowEPComptonDimensionProvider.h"
@@ -184,22 +183,19 @@ void init_Specialized(py::module& qmc)
     py::class_<PartDimensionProvider, PyPartDimensionProvider>(qmc, "PartDimensionProvider")
         .def(py::init<const std::string&>());
 
-    py::class_<EMDimensionProvider, PartDimensionProvider>(qmc, "EMDimensionProvider")
-        .def(py::init<unsigned int>());
-
     py::class_<PrimaryDimensionProvider, PartDimensionProvider>(qmc, "PrimaryDimensionProvider")
         .def(py::init<unsigned int>());
-    
     
     py::class_<LowEPComptonDimensionProvider, PartDimensionProvider>(qmc, "LowEPComptonDimensionProvider")
         .def(
             py::init<unsigned int, unsigned int, unsigned int>(), 
             py::arg("MaxBounce"), py::arg("MaxPhoton"), py::arg("MaxElectron")
         );
-
+    
     py::class_<TotalDimensionProvider, DimensionProvider>(qmc, "TotalDimensionProvider")
         .def(py::init<PartDimensionProvider*, const std::vector<PartDimensionProvider*>&>())
-        .def("GetNumberOfDimensionAtBounce", &TotalDimensionProvider::GetNumberOfDimensionAtBounce);
+        .def("GetNumberOfDimensionAtBounce" , &TotalDimensionProvider::GetNumberOfDimensionAtBounce)
+        .def("GetDimensionPerBounce"        , &TotalDimensionProvider::GetDimensionPerBounce);
 }
 
 void init_QMC(py::module& m)

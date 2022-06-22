@@ -25,13 +25,13 @@ QMCRandomEngine::QMCRandomEngine(const QMCRandomEngineParameters& params)
 double QMCRandomEngine::flat(const std::source_location location)
 {
     CurrentTrackInformation::SetLocation(location);
+    
     if (profiler) profiler->AddCall(1);
     if (statistics) statistics->AddCall(1);
 
     DimensionCount d = dimProvider->GetCurrentDimension();
     PointCount i = idProvider->GetCurrentPointID(d);
     SampleType s = sampler->Sample(i, d);
-
     return s;
 }
 
