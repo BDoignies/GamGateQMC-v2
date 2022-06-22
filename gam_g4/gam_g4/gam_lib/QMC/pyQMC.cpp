@@ -12,6 +12,7 @@ namespace py = pybind11;
 #include "PointIDProvider.h"
 #include "Sampler.h"
 
+#include "SamplerSobol.h"
 #include "SamplerFromFile.h"
 
 #include "RandomProfiler.h"
@@ -160,6 +161,10 @@ void init_Sampling(py::module& qmc)
 
     py::class_<SamplerFromFile, Sampler>(qmc, "SamplerFromFile")
         .def(py::init<const std::string&, PointCount, DimensionCount>());
+
+
+    py::class_<SobolSampler, Sampler>(qmc, "Sobol")
+        .def(py::init<const std::string&, DimensionCount, PointCount, PointCount>());
 
     // Point ID Providers
 
