@@ -32,7 +32,7 @@ struct QMCRandomEngineParameters
 class QMCRandomEngine : public CLHEP::HepRandomEngine
 {
 public:
-    QMCRandomEngine(const QMCRandomEngineParameters& params);
+    QMCRandomEngine(const QMCRandomEngineParameters& params, bool verbose = false);
 
     double flat(const std::source_location location = std::source_location::current()) override;
     void flatArray(const int size, double* vect, const std::source_location location = std::source_location::current()) override;
@@ -47,6 +47,8 @@ public:
 
     ~QMCRandomEngine();
 private:
+    const bool verbose;
+
     RandomProfiler* profiler;
     RandomStatistics* statistics;
 

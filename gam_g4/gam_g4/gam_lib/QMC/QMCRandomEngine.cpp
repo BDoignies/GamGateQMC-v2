@@ -12,7 +12,8 @@ RandomStatistics* QMCRandomEngineParameters::statistics() const
     return nullptr;
 }
 
-QMCRandomEngine::QMCRandomEngine(const QMCRandomEngineParameters& params)
+QMCRandomEngine::QMCRandomEngine(const QMCRandomEngineParameters& params, bool v) :
+    verbose(v)
 { 
     profiler = params.profiler();
     statistics = params.statistics();
@@ -32,6 +33,9 @@ double QMCRandomEngine::flat(const std::source_location location)
     DimensionCount d = dimProvider->GetCurrentDimension();
     PointCount i = idProvider->GetCurrentPointID(d);
     SampleType s = sampler->Sample(i, d);
+
+    if (verbose) std::cout << location.function_name() << "(" << location.line() << "): " << i << ", " << d << "\n";
+    
     return s;
 }
 
