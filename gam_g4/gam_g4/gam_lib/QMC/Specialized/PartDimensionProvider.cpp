@@ -45,8 +45,3 @@ DimensionCount TotalDimensionProvider::GetCurrentDimension()
     }    
     return UNKNOWN_DIMENSION; 
 }
-
-inline TotalDimensionProvider::~TotalDimensionProvider()
-{
-
-}

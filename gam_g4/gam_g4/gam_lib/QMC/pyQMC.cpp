@@ -18,9 +18,17 @@ namespace py = pybind11;
 #include "RandomProfiler.h"
 #include "RandomStatistics.h"
 
+#include "GrouppedIDPointIDProvider.h"
+
+#include "SplittedSobol.h"
+
+// #include "Specialized/EmDimensionProvider.h"
 #include "Specialized/PartDimensionProvider.h"
 #include "Specialized/PrimaryDimensionProvider.h"
 #include "Specialized/LowEPComptonDimensionProvider.h"
+
+#include "Specialized/BounceIndependantDimensionProvider.h"
+#include "Specialized/LowEPComptonDimensionProviderNoLoopDiff.h"
 
 class PySampler : public Sampler
 {
@@ -161,9 +169,11 @@ void init_Sampling(py::module& qmc)
     py::class_<SamplerFromFile, Sampler>(qmc, "SamplerFromFile")
         .def(py::init<const std::string&, PointCount, DimensionCount>());
 
-
     py::class_<SobolSampler, Sampler>(qmc, "Sobol")
         .def(py::init<const std::string&, DimensionCount, PointCount, PointCount>());
+
+    py::class_<SplittedSobol, Sampler>(qmc, "SplittedSobol")
+        .def(py::init<const std::string&, std::vector<std::vector<DimensionCount>>, PointCount>());
 
     // Point ID Providers
 
@@ -171,6 +181,9 @@ void init_Sampling(py::module& qmc)
         .def(py::init<>())
         .def("GetName", &PointIDProvider::GetName)
         .def("GetCurrentPointID", &DefaultPointIDProvider::GetCurrentPointID);
+
+    py::class_<GrouppedIDPointIDProvider, PointIDProvider>(qmc, "GrouppedIDPointIDProvider")
+        .def(py::init<std::vector<std::vector<DimensionCount>>>());
 
     // Dimension Providers
 
@@ -185,6 +198,9 @@ void init_Specialized(py::module& qmc)
 
     py::class_<PrimaryDimensionProvider, PartDimensionProvider>(qmc, "PrimaryDimensionProvider")
         .def(py::init<unsigned int>());
+
+    // py::class_<EMDimensionProvider, PartDimensionProvider>(qmc, "EMDimensionProvider")
+    //     .def(py::init<unsigned int>());
     
     py::class_<LowEPComptonDimensionProvider, PartDimensionProvider>(qmc, "LowEPComptonDimensionProvider")
         .def(
@@ -192,10 +208,18 @@ void init_Specialized(py::module& qmc)
             py::arg("MaxBounce"), py::arg("MaxPhoton"), py::arg("MaxElectron")
         );
     
+    py::class_<LowEPComptonDimensionProviderNoLoop, PartDimensionProvider>(qmc, "LowEPComptonDimensionProviderNoLoop")
+        .def(py::init<>());
+    
     py::class_<TotalDimensionProvider, DimensionProvider>(qmc, "TotalDimensionProvider")
         .def(py::init<PartDimensionProvider*, const std::vector<PartDimensionProvider*>&>())
         .def("GetNumberOfDimensionAtBounce" , &TotalDimensionProvider::GetNumberOfDimensionAtBounce)
         .def("GetDimensionPerBounce"        , &TotalDimensionProvider::GetDimensionPerBounce);
+
+    py::class_<BounceIndependantDimensionProvider, TotalDimensionProvider>(qmc, "BounceIndependantDimensionProvider")
+        .def(py::init<PartDimensionProvider*, const std::vector<PartDimensionProvider*>&>())
+        .def("GetNumberOfDimensionAtBounce" , &BounceIndependantDimensionProvider::GetNumberOfDimensionAtBounce)
+        .def("GetDimensionPerBounce"        , &BounceIndependantDimensionProvider::GetDimensionPerBounce);
 }
 
 void init_QMC(py::module& m)
@@ -237,16 +261,16 @@ void init_QMC(py::module& m)
         .def_readwrite("profilerOutput"  , &QMCRandomEngineParameters::profilerOutput)
         .def_readwrite("profilerReadable", &QMCRandomEngineParameters::profilerReadable)
         .def_readwrite("statsOutput", &QMCRandomEngineParameters::statsOutput)
-        .def_readwrite("sampler", &QMCRandomEngineParameters::sampler)
-        .def_readwrite("dimProvider", &QMCRandomEngineParameters::dimProvider)
-        .def_readwrite("idProvider", &QMCRandomEngineParameters::idProvider);
+        .def_readwrite("sampler",     &QMCRandomEngineParameters::sampler,     py::return_value_policy::reference)
+        .def_readwrite("dimProvider", &QMCRandomEngineParameters::dimProvider, py::return_value_policy::reference)
+        .def_readwrite("idProvider",  &QMCRandomEngineParameters::idProvider,  py::return_value_policy::reference);
 
     py::class_<
         QMCRandomEngine, 
         CLHEP::HepRandomEngine
         // , std::unique_ptr<QMCRandomEngine, py::nodelete>
     >(qmc, EngineName)
-        .def(py::init<QMCRandomEngineParameters>(),
-             py::arg("params")
+        .def(py::init<QMCRandomEngineParameters, bool>(),
+             py::arg("params"), py::arg("verbose") = false
         );
 }

@@ -34,7 +34,7 @@ double QMCRandomEngine::flat(const std::source_location location)
     PointCount i = idProvider->GetCurrentPointID(d);
     SampleType s = sampler->Sample(i, d);
 
-    if (verbose) std::cout << location.function_name() << "(" << location.line() << "): " << i << ", " << d << "\n";
+    if (verbose) std::cout << location.function_name() << "(" << location.line() << "): " << i << ", " << d << " => " << s <<"\n";
     
     return s;
 }
@@ -60,6 +60,7 @@ void QMCRandomEngine::flatArray(const int size, double* vect, const std::source_
 void QMCRandomEngine::setSeed(long seed, int n)
 {
     tmpEngine.setSeed(seed, n);
+    sampler->SetSeed(seed);
 }
 
 void QMCRandomEngine::setSeeds(const long* seeds, int n)
