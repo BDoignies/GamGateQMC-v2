@@ -13,6 +13,7 @@ namespace py = pybind11;
 #include "Sampler.h"
 
 #include "SamplerSobol.h"
+#include "SamplerCascaded.h"
 #include "SamplerFromFile.h"
 
 #include "RandomProfiler.h"
@@ -171,6 +172,10 @@ void init_Sampling(py::module& qmc)
 
     py::class_<SobolSampler, Sampler>(qmc, "Sobol")
         .def(py::init<const std::string&, DimensionCount, PointCount, PointCount>());
+
+    py::class_<CascadedSampler, Sampler>(qmc, "Cascaded")
+        .def(py::init<const std::string&, unsigned int, DimensionCount>());
+
 
     py::class_<SplittedSobol, Sampler>(qmc, "SplittedSobol")
         .def(py::init<const std::string&, std::vector<std::vector<DimensionCount>>, PointCount>());
