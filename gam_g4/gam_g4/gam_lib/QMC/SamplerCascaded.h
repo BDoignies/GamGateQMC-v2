@@ -6,6 +6,8 @@
 
 #include "Sampler.h"
 
+#include "QMC_utils.h"
+
 #include "Cascaded/SobolGenerator1D.h"
 #include "Cascaded/Random.h"
 #include "Cascaded/OwenScrambling.h"
@@ -60,6 +62,7 @@ public:
         owen = (seed != 1);
 
         currentPoint = 0;
+		point.resize(dims);
     	getCascadedSobol<double>(
     		point.data(), sobols, realSeeds.data(),
     		dims, 0, bits, owen
@@ -68,6 +71,9 @@ public:
 
 	SampleType Sample(PointCount i, DimensionCount dim)
 	{
+		if (dim >= UNKNOWN_DIMENSION) return Whitenoise();
+		if (i   >= UNKNOWN_POINTID  ) return Whitenoise();
+
 		if (i != currentPoint)
 		{
 			currentPoint = i;
