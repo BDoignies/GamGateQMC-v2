@@ -26,15 +26,15 @@ QMCRandomEngine::QMCRandomEngine(const QMCRandomEngineParameters& params, bool v
 double QMCRandomEngine::flat(const std::source_location location)
 {
     CurrentTrackInformation::SetLocation(location);
+    const auto& bounce = CurrentTrackInformation::globalStepInformations.interactionNumber;
     
-    if (profiler) profiler->AddCall(1);
-    if (statistics) statistics->AddCall(1);
-
     DimensionCount d = dimProvider->GetCurrentDimension();
     PointCount i = idProvider->GetCurrentPointID(d);
     SampleType s = sampler->Sample(i, d);
 
-    if (verbose) std::cout << location.function_name() << "(" << location.line() << "): " << i << ", " << d << " => " << s <<"\n";
+    if (profiler) profiler->AddCall(1);
+    if (statistics) statistics->AddCall(1, d);
+    if (verbose) std::cout << location.function_name() << "(" << location.line() << ")(" << bounce << "): " << i << ", " << d << " => " << s <<"\n";
     
     return s;
 }
@@ -44,7 +44,6 @@ void QMCRandomEngine::flatArray(const int size, double* vect, const std::source_
     CurrentTrackInformation::SetLocation(location);
 
     if (profiler) profiler->AddCall(size);
-    if (statistics) statistics->AddCall(size);
  
     // Do not call flat() for stat computation   
     for (int k = 0; k < size; k++)
@@ -53,6 +52,7 @@ void QMCRandomEngine::flatArray(const int size, double* vect, const std::source_
         PointCount i = idProvider->GetCurrentPointID(d);
         SampleType s = sampler->Sample(i, d);
 
+        if (statistics) statistics->AddCall(1, d);
         vect[k] = s;
     }
 }
