@@ -26,7 +26,7 @@ inline void ParseSourceLocation(const std::source_location& location, std::strin
     std::size_t beginFuncName = 0;
     std::size_t endFuncName = 0;
 
-    const std::string functionName = location.function_name();
+    const std::string& functionName = location.function_name();
     for (std::size_t i = 0; i < functionName.size(); i++)
     {
         if (functionName[i] == ' ')

@@ -39,6 +39,7 @@ class SimulationUserInfo:
         # MixMaxRng seems recommended for MultiThread
         self.random_engine = 'MixMaxRng'      # 'MersenneTwister'
         self.random_parameters = g4.qmc.Parameters()
+        self.random_verbose = False
         self.random_seed = 'auto'
 
     @property

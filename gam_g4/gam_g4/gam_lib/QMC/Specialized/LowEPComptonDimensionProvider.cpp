@@ -18,7 +18,7 @@ unsigned int LowEPComptonDimensionProvider::GetMaxDimension() const
     count += (
         1 + // LowEPComptonModel::SampleSecondaries(358)
         1 + // LowEPComptonModel::SampleSecondaries(360)
-        1 + // LowEPComptonModel::SampleSecondaries(365)
+        // 1 + // LowEPComptonModel::SampleSecondaries(365)
         1   // LowEPComptonModel::SampleSecondaries(375)
     ) * max_photon_loop;
     
@@ -67,13 +67,13 @@ DimensionCount LowEPComptonDimensionProvider::GetCurrentDimension()
     // 4 because at most 4 numbers in the loop 
     // reject_wn allow to rejecting number to whitenoise while leaving the 
     // opportunity to go to electron part 
-    const DimensionCount photon_start = 2 + 4 * current_loop_counter + reject_ph_wn * UNKNOWN_DIMENSION;
+    const DimensionCount photon_start = 2 + 3 * current_loop_counter + reject_ph_wn * UNKNOWN_DIMENSION;
     if (line == 358) { return 0 + photon_start; };                              // LowEPComptonModel::SampleSecondaries(358)
     if (line == 360) { return 1 + photon_start; };                              // LowEPComptonModel::SampleSecondaries(360)
-    if (line == 365) { return 2 + photon_start; };                              // LowEPComptonModel::SampleSecondaries(365)
-    if (line == 375) { current_loop_counter ++; return 3 + photon_start; }; // LowEPComptonModel::SampleSecondaries(375)
+    if (line == 365) { return 1 + photon_start; };                              // LowEPComptonModel::SampleSecondaries(365)
+    if (line == 375) { current_loop_counter ++; return 2 + photon_start; }; // LowEPComptonModel::SampleSecondaries(375)
     
-    const DimensionCount photon_end = 2 + 4 * max_photon_loop;
+    const DimensionCount photon_end = 2 + 3 * max_photon_loop;
     if (line == 379) { current_loop_counter = 0; return photon_end; };        // LowEPComptonModel::SampleSecondaries(379)
 
     // Too much loop, reject sample to whitenoise!

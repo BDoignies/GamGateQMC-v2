@@ -29,6 +29,7 @@ namespace py = pybind11;
 
 #include "Specialized/BounceIndependantDimensionProvider.h"
 #include "Specialized/LowEPComptonDimensionProviderNoLoopDiff.h"
+#include "Specialized/LowEPComptonDimensionProviderInterleaved.h"
 
 class PySampler : public Sampler
 {
@@ -209,6 +210,9 @@ void init_Specialized(py::module& qmc)
         );
     
     py::class_<LowEPComptonDimensionProviderNoLoop, PartDimensionProvider>(qmc, "LowEPComptonDimensionProviderNoLoop")
+        .def(py::init<>());
+
+    py::class_<LowEPComptonDimensionProviderInterleaved, PartDimensionProvider>(qmc, "LowEPComptonDimensionProviderInterleaved")
         .def(py::init<>());
     
     py::class_<TotalDimensionProvider, DimensionProvider>(qmc, "TotalDimensionProvider")

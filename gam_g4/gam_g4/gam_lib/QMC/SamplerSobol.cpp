@@ -130,6 +130,17 @@ void SobolSampler::LoadDirections(const std::string& dirName)
 
 void SobolSampler::LoadPoint(PointCount i)
 {
+	pointID = i;
+
+	const uint64_t C = CountStartingOnes(i - 1);
+	for (uint64_t j = 0; j < D; j++)
+	{
+		index[j] = index[j] ^ Vs[j][C];
+		point[j] = (double) index[j] * inv32;
+	}
+	return;
+	
+	/*
 	if (i == pointID + 1)
 	{
 		pointID = i;
@@ -174,4 +185,5 @@ void SobolSampler::LoadPoint(PointCount i)
 			pointID = i;
 		}
 	}
+	*/
 }
