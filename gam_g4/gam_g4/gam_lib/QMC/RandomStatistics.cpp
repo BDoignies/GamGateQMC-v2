@@ -20,9 +20,10 @@ RandomStatistics::RandomStatistics(const std::string& fname)
 }
 
 #include "CurrentTrackInformationAction.h"
-void RandomStatistics::AddCall(unsigned int n)
+void RandomStatistics::AddCall(unsigned int n, unsigned int d)
 {
 	const std::source_location& location = CurrentTrackInformation::currentLocation;
+	const auto bounce = CurrentTrackInformation::globalStepInformations.interactionNumber;
 
 	const std::string name = formatter(
 		location.file_name(), location.function_name(),
@@ -34,6 +35,12 @@ void RandomStatistics::AddCall(unsigned int n)
 
 	calls[name].callCount ++;
 	calls[name].numbersCount += n;
+
+	const std::string& className = CurrentTrackInformation::currentClassName;
+	const std::string& funcName  = CurrentTrackInformation::currentFuncName;
+	
+	std::string idx = className + "::" + funcName + "(" + std::to_string(location.line()) + ")," + std::to_string(bounce);
+	dimensions[idx].insert(d);
 }
 
 void RandomStatistics::Write()
@@ -45,6 +52,14 @@ void RandomStatistics::Write()
 	for (const auto& stat : calls)
 	{
 		outFile << stat.first << ";" << stat.second.callCount << ";" << stat.second.numbersCount << "\n";
+	}
+
+	for (const auto& dim : dimensions)
+	{
+		outFile << dim.first << ": ";
+		for (const auto& d : dim.second)
+			outFile << d << ";";
+		outFile << "\n";
 	}
 }
 
