@@ -93,6 +93,9 @@ void CurrentTrackInformationAction::PostUserTrackingAction(const G4Track* track)
     ((void) track);
     DyingParticleProcess();
     CurrentTrackInformation::track = nullptr;
+
+    // Reset global step informations
+    CurrentTrackInformation::globalStepInformations = {1, 0};
 }
 
 CurrentStepInformationAction::CurrentStepInformationAction() 
