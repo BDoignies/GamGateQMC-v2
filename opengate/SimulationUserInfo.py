@@ -1,7 +1,6 @@
 import opengate as gate
 import opengate_core as g4
 
-
 class SimulationUserInfo:
     """
     This class is a simple structure that contains all user general options of a simulation.
@@ -39,6 +38,11 @@ class SimulationUserInfo:
         # MixMaxRng seems recommended for MultiThread
         self.random_engine = "MixMaxRng"  # 'MersenneTwister'
         self.random_seed = "auto"
+
+        # @BD : Random parameters
+        self.random_parameters = g4.qmc.Parameters()
+        self.random_verbose = False
+        self.random_seed = 'auto'
 
     @property
     def verbose_level(self):
