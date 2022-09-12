@@ -122,6 +122,15 @@ class PhysicsManager:
         # Select the Physic List: check if simple ones
         if pl_name.startswith("G4"):
             self.g4_physic_list = gate.create_modular_physics_list(pl_name)
+        # @BD : Custom phlist parameters
+        elif pl_name == g4.phlist.LimittedPhlist:
+            global_limits  = self.user_info.physics_list_global_limit
+            process_limits = self.user_info.physics_list_limitations
+
+            self.g4_physic_list = gate.create_custom_phlist({
+                "log": 1, "name": "", "maxSteps": global_limits,
+                "processes": process_limits
+            })
         else:
             # If not, select the Physic List from the Factory
             factory = g4.G4PhysListFactory()

@@ -115,3 +115,24 @@ def create_modular_physics_list(pl_name):
     b = gate.create_modular_physics_list_class(a)
     # Create the object
     return b()
+
+
+# @BD : Helper to create custom physics list from params
+def create_custom_phlist(params):
+    """
+        params: dict
+            Parameters of the physics list
+    """
+    def custom_ctr(self):
+        g4.G4VModularPhysicsList.__init__(self)
+        self.p = self.pl_class(**params)
+        self.RegisterPhysics(self.p)
+
+    a = getattr(sys.modules['opengate_core.opengate_core.phlist'], g4.phlist.LimittedPhlist)
+    b = type(a.__name__,
+            (g4.G4VModularPhysicsList,),
+            {'pl_class': a,
+            '__init__': custom_ctr,
+            '__del__':  modular_physics_list_destructor})
+
+    return b()
