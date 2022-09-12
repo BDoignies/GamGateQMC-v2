@@ -12,7 +12,8 @@ cmake_policy(SET CMP0048 NEW)
 
 project(opengate_core)
 
-set(CMAKE_CXX_STANDARD 17)
+# @BD : Set standard to cpp 20 (for source_location)
+set(CMAKE_CXX_STANDARD 20)
 
 # Need Geant4
 find_package(Geant4 REQUIRED OPTIONAL_COMPONENTS qt)
@@ -71,6 +72,10 @@ add_subdirectory(external/fmt EXCLUDE_FROM_ALL)
 file(GLOB all_SRCS
         "${PROJECT_SOURCE_DIR}/opengate_core/g4_bindings/*.cpp"
         "${PROJECT_SOURCE_DIR}/opengate_core/opengate_lib/*.cpp"
+# @BD : Add source path 
+        "${PROJECT_SOURCE_DIR}/opengate_core/opengate_lib/Physics/*.cpp"
+        "${PROJECT_SOURCE_DIR}/opengate_core/opengate_lib/QMC/*.cpp"
+        "${PROJECT_SOURCE_DIR}/opengate_core/opengate_lib/QMC/Specialized/*.cpp"
         )
 pybind11_add_module(opengate_core
         #NO_EXTRAS

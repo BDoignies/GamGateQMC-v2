@@ -270,6 +270,10 @@ void init_GateUniqueVolumeID(py::module &);
 
 void init_GateVolumeDepthID(py::module &m);
 
+// @BD : QMC
+void init_LimittedPhysicsList(py::module &m);
+void init_QMC(py::module &m);
+
 PYBIND11_MODULE(opengate_core, m) {
 
   init_G4ThreeVector(m);
@@ -412,4 +416,8 @@ PYBIND11_MODULE(opengate_core, m) {
   init_GateUniqueVolumeIDManager(m);
   init_GateUniqueVolumeID(m);
   init_GateVolumeDepthID(m);
+
+  // @BD : QMC
+  init_LimittedPhysicsList(m);
+  init_QMC(m);
 }
