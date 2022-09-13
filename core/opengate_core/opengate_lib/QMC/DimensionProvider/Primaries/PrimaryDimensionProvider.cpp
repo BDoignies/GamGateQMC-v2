@@ -22,7 +22,7 @@ bool PrimaryDimensionProvider::Accept(
         return false;
 
     if (className == "G4SPSRandomGenerator")        return true;
-    if (className == "GamSPSVoxelsPosDistribution") return true;
+    if (className == "GateSPSVoxelsPosDistribution") return true;
     
     // std::cout << "[EMDimensionProvider] Rejected: " << className << "::" << funcName << std::endl;
     return false;
