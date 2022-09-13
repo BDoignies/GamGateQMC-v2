@@ -12,6 +12,9 @@
 #include "G4UserTrackingAction.hh"
 #include "GateVActor.h"
 
+// @BD
+#include "QMC/CurrentTrackInformationAction.h"
+
 class GateTrackingAction : public G4UserTrackingAction {
 
 public:
@@ -26,6 +29,11 @@ public:
   virtual void PostUserTrackingAction(const G4Track *Track);
 
 protected:
+  // @BD TODO: Find better place for this.
+  // @BD : But taking the Gate dependancy of GateVActor seems
+  // @BD : heavy and the dependancy to py::dict is odd...
+  CurrentTrackInformationAction qmcTrackActor;
+
   std::vector<GateVActor *> fPreUserTrackingActionActors;
   std::vector<GateVActor *> fPostUserTrackingActionActors;
 };

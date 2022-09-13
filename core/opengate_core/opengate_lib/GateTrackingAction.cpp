@@ -23,12 +23,18 @@ void GateTrackingAction::RegisterActor(GateVActor *actor) {
 }
 
 void GateTrackingAction::PreUserTrackingAction(const G4Track *track) {
+  // @BD
+  qmcTrackActor.PreUserTrackingAction(track);
+
   for (auto actor : fPreUserTrackingActionActors) {
     actor->PreUserTrackingAction(track);
   }
 }
 
 void GateTrackingAction::PostUserTrackingAction(const G4Track *track) {
+  // @BD
+  qmcTrackActor.PostUserTrackingAction(track);
+
   for (auto actor : fPostUserTrackingActionActors) {
     actor->PostUserTrackingAction(track);
   }

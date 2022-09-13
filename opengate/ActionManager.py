@@ -1,7 +1,6 @@
 import opengate as gate
 import opengate_core as g4
 
-
 class ActionManager(g4.G4VUserActionInitialization):
     """
     Main object to manage all actions during a simulation.
@@ -19,6 +18,8 @@ class ActionManager(g4.G4VUserActionInitialization):
         self.g4_RunAction = []
         self.g4_EventAction = []
         self.g4_TrackingAction = []
+        # @BD 
+        self.g4_SteppingAction = []
 
     def __del__(self):
         pass
@@ -57,3 +58,10 @@ class ActionManager(g4.G4VUserActionInitialization):
         ta = g4.GateTrackingAction()
         self.SetUserAction(ta)
         self.g4_TrackingAction.append(ta)
+
+
+        # @BD register QMC actor for tracks
+        sa = g4.qmc.QMCCurrentStepInformationAction()
+        self.SetUserAction(sa)
+        self.g4_SteppingAction.append(sa)
+        
