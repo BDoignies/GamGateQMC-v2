@@ -14,6 +14,7 @@ namespace py = pybind11;
 
 #include "SamplerSobol.h"
 #include "SamplerFromFile.h"
+#include "SamplerFixedDimensions.h"
 
 #include "RandomProfiler.h"
 #include "RandomStatistics.h"
@@ -169,6 +170,8 @@ void init_Sampling(py::module& qmc)
     py::class_<SobolSampler, Sampler>(qmc, "Sobol")
         .def(py::init<const std::string&, DimensionCount, PointCount, PointCount>());
 
+    py::class_<FixedDimensionsSampler, Sampler>(qmc, "FixedDimension")
+        .def(py::init<const std::vector<unsigned int>&, const std::vector<SampleType>&>());
 
     // Point ID Providers
 
@@ -230,9 +233,15 @@ void init_QMC(py::module& m)
         CurrentStepInformationAction,
         G4UserSteppingAction,
         std::unique_ptr<CurrentStepInformationAction, py::nodelete>
-    >(qmc, "CurrentStepInformationAction")
+    >(qmc, "QMCCurrentStepInformationAction")
         .def(py::init());
-
+    
+    py::class_<
+        CurrentTrackInformationAction,
+        G4UserTrackingAction,
+        std::unique_ptr<CurrentTrackInformationAction, py::nodelete>
+    >(qmc, "CurrentTrackInformationAction")
+        .def(py::init());
 
     init_Sampling(qmc);
     init_Specialized(qmc);
