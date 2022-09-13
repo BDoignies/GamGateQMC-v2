@@ -60,6 +60,10 @@ bool LowEPComptonDimensionProviderNoLoop::Accept(
             const std::string& funcName
 )
 {
+
+    ((void) processName);
+    ((void) funcName);
+    
     if (className == "G4LowEPComptonModel") return true;
     if (className == "G4VEmProcess")        return true;   
     if (className == "G4EmElementSelector") return true;

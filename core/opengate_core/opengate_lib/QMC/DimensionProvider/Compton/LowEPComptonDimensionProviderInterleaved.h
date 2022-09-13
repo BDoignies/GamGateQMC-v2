@@ -1,13 +1,13 @@
 #pragma once
 
-#include "PartDimensionProvider.h"
-#include "../CurrentTrackInformationAction.h"
+#include "../PartDimensionProvider.h"
+#include "../../CurrentTrackInformationAction.h"
 
 // Same as LowEPComptonDimensionProvider, but inner loop are not considered 
-class LowEPComptonDimensionProviderNoLoop : public PartDimensionProvider
+class LowEPComptonDimensionProviderInterleaved : public PartDimensionProvider
 {
 public:
-    LowEPComptonDimensionProviderNoLoop();
+    LowEPComptonDimensionProviderInterleaved();
     
     bool Accept(
         const std::string& processName,
@@ -18,4 +18,5 @@ public:
     unsigned int GetMaxDimension() const override;
     DimensionCount GetCurrentDimension() override;
 private: 
+    unsigned int photonloop = 0;
 };

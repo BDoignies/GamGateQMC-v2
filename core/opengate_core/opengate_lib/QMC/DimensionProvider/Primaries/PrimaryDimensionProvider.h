@@ -1,7 +1,7 @@
 #pragma once
 
-#include "PartDimensionProvider.h"
-#include "../CurrentTrackInformationAction.h"
+#include "../PartDimensionProvider.h"
+#include "../../CurrentTrackInformationAction.h"
 
 class PrimaryDimensionProvider : public PartDimensionProvider
 {

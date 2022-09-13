@@ -20,14 +20,12 @@ namespace py = pybind11;
 
 #include "GrouppedIDPointIDProvider.h"
 
-// #include "Specialized/EmDimensionProvider.h"
-#include "Specialized/PartDimensionProvider.h"
-#include "Specialized/PrimaryDimensionProvider.h"
-#include "Specialized/LowEPComptonDimensionProvider.h"
+#include "DimensionProvider/PartDimensionProvider.h"
+#include "DimensionProvider/Primaries/PrimaryDimensionProvider.h"
 
-#include "Specialized/BounceIndependantDimensionProvider.h"
-#include "Specialized/LowEPComptonDimensionProviderNoLoopDiff.h"
-#include "Specialized/LowEPComptonDimensionProviderInterleaved.h"
+#include "DimensionProvider/Compton/LowEPComptonDimensionProvider.h"
+#include "DimensionProvider/Compton/LowEPComptonDimensionProviderNoLoopDiff.h"
+#include "DimensionProvider/Compton/LowEPComptonDimensionProviderInterleaved.h"
 
 class PySampler : public Sampler
 {
@@ -215,11 +213,6 @@ void init_Specialized(py::module& qmc)
         .def(py::init<PartDimensionProvider*, const std::vector<PartDimensionProvider*>&>())
         .def("GetNumberOfDimensionAtBounce" , &TotalDimensionProvider::GetNumberOfDimensionAtBounce)
         .def("GetDimensionPerBounce"        , &TotalDimensionProvider::GetDimensionPerBounce);
-
-    py::class_<BounceIndependantDimensionProvider, TotalDimensionProvider>(qmc, "BounceIndependantDimensionProvider")
-        .def(py::init<PartDimensionProvider*, const std::vector<PartDimensionProvider*>&>())
-        .def("GetNumberOfDimensionAtBounce" , &BounceIndependantDimensionProvider::GetNumberOfDimensionAtBounce)
-        .def("GetDimensionPerBounce"        , &BounceIndependantDimensionProvider::GetDimensionPerBounce);
 }
 
 void init_QMC(py::module& m)

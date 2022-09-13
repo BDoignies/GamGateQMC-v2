@@ -75,7 +75,9 @@ file(GLOB all_SRCS
 # @BD : Add source path 
         "${PROJECT_SOURCE_DIR}/opengate_core/opengate_lib/Physics/*.cpp"
         "${PROJECT_SOURCE_DIR}/opengate_core/opengate_lib/QMC/*.cpp"
-        "${PROJECT_SOURCE_DIR}/opengate_core/opengate_lib/QMC/Specialized/*.cpp"
+        "${PROJECT_SOURCE_DIR}/opengate_core/opengate_lib/QMC/DimensionProvider/*.cpp"
+        "${PROJECT_SOURCE_DIR}/opengate_core/opengate_lib/QMC/DimensionProvider/Primaries/*.cpp"
+        "${PROJECT_SOURCE_DIR}/opengate_core/opengate_lib/QMC/DimensionProvider/Compton/*.cpp"
         )
 pybind11_add_module(opengate_core
         #NO_EXTRAS

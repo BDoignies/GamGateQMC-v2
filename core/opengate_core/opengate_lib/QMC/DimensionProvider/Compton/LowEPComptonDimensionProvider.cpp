@@ -38,10 +38,10 @@ unsigned int LowEPComptonDimensionProvider::GetMaxDimension() const
 DimensionCount LowEPComptonDimensionProvider::GetCurrentDimension()
 {    
     const std::source_location& location = CurrentTrackInformation::currentLocation;
-    const std::string& className = CurrentTrackInformation::currentClassName;
-    const std::string& funcName  = CurrentTrackInformation::currentFuncName;
     const auto line = location.line();
-    const auto currentBounce = CurrentTrackInformation::globalStepInformations.interactionNumber;
+    // const std::string& className = CurrentTrackInformation::currentClassName;
+    // const std::string& funcName  = CurrentTrackInformation::currentFuncName;
+    // const auto currentBounce = CurrentTrackInformation::globalStepInformations.interactionNumber;
 
     // Too much bounces
     // if (currentBounce > max_bounce) return UNKNOWN_DIMENSION;
@@ -95,6 +95,8 @@ bool LowEPComptonDimensionProvider::Accept(
             const std::string& funcName
 )
 {
+    ((void) processName);
+    ((void) funcName);
     // std::cout << "LowEPComptonModel: " << className << std::endl;
     const auto currentBounce = CurrentTrackInformation::globalStepInformations.interactionNumber;
 
