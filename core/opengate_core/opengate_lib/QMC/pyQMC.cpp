@@ -21,6 +21,8 @@ namespace py = pybind11;
 
 #include "GrouppedIDPointIDProvider.h"
 
+#include "DiscorverDimensionProvider.h"
+
 #include "DimensionProvider/PartDimensionProvider.h"
 #include "DimensionProvider/Primaries/PrimaryDimensionProvider.h"
 
@@ -187,6 +189,11 @@ void init_Sampling(py::module& qmc)
 
     py::class_<WhitenoiseDimensionProvider, DimensionProvider>(qmc, "WhitenoiseDimensionProvider")
         .def(py::init<>());
+
+    py::class_<DiscoverDimensionProvider, DimensionProvider>(qmc, "DiscoverDimensionProvider")
+        .def(py::init<bool>(), py::arg("includeBounce") = true)
+        .def("saveToFile", &DiscoverDimensionProvider::saveToFile)
+        .def("loadFromFile", &DiscoverDimensionProvider::loadFromFile);
 }
 
 void init_Specialized(py::module& qmc)
