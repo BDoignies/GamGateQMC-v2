@@ -118,6 +118,54 @@ void LimittedPhysicList::ConstructProcess()
     {   
         BuildCompton(it->second, maxGlobalSteps);
     }
+
+    if (auto it = processes.find("PhotoElectric");
+        it != processes.end())
+    {   
+        BuildPhotoElectric(it->second, maxGlobalSteps);
+    }
+
+    if (auto it = processes.find("GammaConversion");
+        it != processes.end())
+    {   
+        BuildGammaConversion(it->second, maxGlobalSteps);
+    }
+
+    if (auto it = processes.find("RayleighScattering");
+        it != processes.end())
+    {   
+        BuildRayleighScattering(it->second, maxGlobalSteps);
+    }
+
+    if (auto it = processes.find("ElectronMSC");
+        it != processes.end())
+    {
+        BuildElectronMSC(it->second, maxGlobalSteps);   
+    }
+    
+    if (auto it = processes.find("ElectronIonisation");
+        it != processes.end())
+    {
+        BuildElectronIonisation(it->second, maxGlobalSteps);   
+    }
+
+    if (auto it = processes.find("ElectronBremsstrahlung");
+        it != processes.end())
+    {
+        BuildElectronBremsstrahlung(it->second, maxGlobalSteps);   
+    }
+
+    if (auto it = processes.find("ElectronCoulombScattering");
+        it != processes.end())
+    {
+        BuildElectronCoulombScattering(it->second, maxGlobalSteps);   
+    }
+    
+    if (auto it = processes.find("PairProduction");
+        it != processes.end())
+    {
+        BuildPairProduction(it->second, maxGlobalSteps);   
+    }
     // G4EmBuilder::ConstructCharged(hmsc, pnuc);
     // G4EmModelActivator mact(GetPhysicsName());
 }
@@ -125,11 +173,11 @@ void LimittedPhysicList::ConstructProcess()
 void LimittedPhysicList::BuildCompton(const ProcessLimits& limits, int maxSteps)
 {
     // Copy of OPT4 physics
+    G4ParticleDefinition* particle = G4Gamma::Gamma();
+
     G4EmParameters* param = G4EmParameters::Instance();
     G4PhysicsListHelper* ph = G4PhysicsListHelper::GetPhysicsListHelper();
     G4bool polar = param->EnablePolarisation();
-
-    G4ParticleDefinition* particle = G4Gamma::Gamma();
 
     G4ComptonScattering* cs = new G4ComptonScattering;
     cs->SetEmModel(new G4KleinNishinaModel());
@@ -158,4 +206,151 @@ void LimittedPhysicList::BuildCompton(const ProcessLimits& limits, int maxSteps)
         StepsCountLimittedProcess* process = new StepsCountLimittedProcess(limits, maxSteps, cs);
         ph->RegisterProcess(process, particle);
     }
+}
+
+void LimittedPhysicList::BuildPhotoElectric(const ProcessLimits& limits, int maxSteps)
+{
+    G4ParticleDefinition* particle = G4Gamma::Gamma();
+
+    G4EmParameters* param = G4EmParameters::Instance();
+    G4PhysicsListHelper* ph = G4PhysicsListHelper::GetPhysicsListHelper();
+    G4bool polar = param->EnablePolarisation();
+
+    G4PhotoElectricEffect* pe = new G4PhotoElectricEffect();
+    G4VEmModel* peModel = new G4LivermorePhotoElectricModel();
+    pe->SetEmModel(peModel);
+    if(polar) {
+        peModel->SetAngularDistribution(new G4PhotoElectricAngularGeneratorPolarized());
+    }
+
+    StepsCountLimittedProcess* process = new StepsCountLimittedProcess(limits, maxSteps, pe);
+    ph->RegisterProcess(process, particle);
+}
+
+void LimittedPhysicList::BuildGammaConversion(const ProcessLimits& limits, int maxSteps)
+{
+    G4ParticleDefinition* particle = G4Gamma::Gamma();
+
+    G4EmParameters* param = G4EmParameters::Instance();
+    G4PhysicsListHelper* ph = G4PhysicsListHelper::GetPhysicsListHelper();
+
+    G4GammaConversion* gc = new G4GammaConversion();
+    G4VEmModel* conv = new G4BetheHeitler5DModel();
+    gc->SetEmModel(conv);
+
+    StepsCountLimittedProcess* process = new StepsCountLimittedProcess(limits, maxSteps, gc);
+    ph->RegisterProcess(process, particle);
+}
+
+void LimittedPhysicList::BuildRayleighScattering(const ProcessLimits& limits, int maxSteps)
+{
+    G4ParticleDefinition* particle = G4Gamma::Gamma();
+
+    G4EmParameters* param = G4EmParameters::Instance();
+    G4PhysicsListHelper* ph = G4PhysicsListHelper::GetPhysicsListHelper();
+    G4bool polar = param->EnablePolarisation();
+
+    G4RayleighScattering* rl = new G4RayleighScattering();
+    if(polar) {
+        rl->SetEmModel(new G4LivermorePolarizedRayleighModel());
+    }
+
+    StepsCountLimittedProcess* process = new StepsCountLimittedProcess(limits, maxSteps, rl);
+    ph->RegisterProcess(process, particle);
+}
+
+void LimittedPhysicList::BuildElectronMSC(const ProcessLimits& limits, int maxSteps)
+{
+    const G4EmParameters* param = G4EmParameters::Instance();
+    const G4double highEnergyLimit = param->MscEnergyLimit();
+
+    G4PhysicsListHelper* ph = G4PhysicsListHelper::GetPhysicsListHelper();
+
+    G4ParticleDefinition* particle = G4Electron::Electron();
+    
+    G4eMultipleScattering* msc = new G4eMultipleScattering();
+    G4GoudsmitSaundersonMscModel* msc1 = new G4GoudsmitSaundersonMscModel();
+    G4WentzelVIModel* msc2 = new G4WentzelVIModel();
+    msc1->SetHighEnergyLimit(highEnergyLimit);
+    msc2->SetLowEnergyLimit(highEnergyLimit);
+    msc->SetEmModel(msc1);
+    msc->SetEmModel(msc2);
+
+    StepsCountLimittedProcess* process = new StepsCountLimittedProcess(limits, maxSteps, msc);
+    ph->RegisterProcess(process, particle);
+}
+
+void LimittedPhysicList::BuildElectronIonisation(const ProcessLimits& limits, int maxSteps)
+{
+    const G4EmParameters* param = G4EmParameters::Instance();
+    const G4double highEnergyLimit = param->MscEnergyLimit();
+
+    G4PhysicsListHelper* ph = G4PhysicsListHelper::GetPhysicsListHelper();
+
+    G4ParticleDefinition* particle = G4Electron::Electron();
+    
+    G4eIonisation* eioni = new G4eIonisation();
+    G4VEmModel* theIoniLiv = new G4LivermoreIonisationModel();
+    theIoniLiv->SetHighEnergyLimit(0.1*CLHEP::MeV); 
+    eioni->AddEmModel(0, theIoniLiv, new G4UniversalFluctuation() );
+    
+    StepsCountLimittedProcess* process = new StepsCountLimittedProcess(limits, maxSteps, eioni);
+    ph->RegisterProcess(process, particle);
+}
+
+void LimittedPhysicList::BuildElectronBremsstrahlung(const ProcessLimits& limits, int maxSteps)
+{
+    const G4EmParameters* param = G4EmParameters::Instance();
+    const G4double highEnergyLimit = param->MscEnergyLimit();
+
+    G4PhysicsListHelper* ph = G4PhysicsListHelper::GetPhysicsListHelper();
+
+    G4ParticleDefinition* particle = G4Electron::Electron();
+    
+    G4eBremsstrahlung* brem = new G4eBremsstrahlung();
+    G4SeltzerBergerModel* br1 = new G4SeltzerBergerModel();
+    G4eBremsstrahlungRelModel* br2 = new G4eBremsstrahlungRelModel();
+    br1->SetAngularDistribution(new G4Generator2BS());
+    br2->SetAngularDistribution(new G4Generator2BS());
+    brem->SetEmModel(br1);
+    brem->SetEmModel(br2);
+    br1->SetHighEnergyLimit(CLHEP::GeV);
+    
+    StepsCountLimittedProcess* process = new StepsCountLimittedProcess(limits, maxSteps, brem);
+    ph->RegisterProcess(process, particle);
+}
+
+void LimittedPhysicList::BuildElectronCoulombScattering(const ProcessLimits& limits, int maxSteps)
+{
+    const G4EmParameters* param = G4EmParameters::Instance();
+    const G4double highEnergyLimit = param->MscEnergyLimit();
+
+    G4PhysicsListHelper* ph = G4PhysicsListHelper::GetPhysicsListHelper();
+
+    G4ParticleDefinition* particle = G4Electron::Electron();
+        
+    G4eCoulombScatteringModel* ssm = new G4eCoulombScatteringModel(); 
+    G4CoulombScattering* ss = new G4CoulombScattering();
+    ss->SetEmModel(ssm); 
+    ss->SetMinKinEnergy(highEnergyLimit);
+    ssm->SetLowEnergyLimit(highEnergyLimit);
+    ssm->SetActivationLowEnergyLimit(highEnergyLimit);
+    
+    StepsCountLimittedProcess* process = new StepsCountLimittedProcess(limits, maxSteps, ss);
+    ph->RegisterProcess(process, particle);
+}
+
+void LimittedPhysicList::BuildPairProduction(const ProcessLimits& limits, int maxSteps)
+{
+    const G4EmParameters* param = G4EmParameters::Instance();
+    const G4double highEnergyLimit = param->MscEnergyLimit();
+
+    G4PhysicsListHelper* ph = G4PhysicsListHelper::GetPhysicsListHelper();
+
+    G4ParticleDefinition* particle = G4Electron::Electron();
+        
+    G4ePairProduction* ee = new G4ePairProduction();
+
+    StepsCountLimittedProcess* process = new StepsCountLimittedProcess(limits, maxSteps, ee);
+    ph->RegisterProcess(process, particle);
 }

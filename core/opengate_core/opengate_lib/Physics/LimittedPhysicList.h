@@ -46,6 +46,18 @@ private:
      * @param maxSteps Global maximum number of steps
      */
     void BuildCompton(const ProcessLimits& limits, int maxSteps); 
+    void BuildPhotoElectric(const ProcessLimits& limits, int maxSteps);
+    void BuildGammaConversion(const ProcessLimits& limits, int maxSteps);
+    void BuildRayleighScattering(const ProcessLimits& limits, int maxSteps);
+    
+    // Electron processes
+    void BuildElectronMSC(const ProcessLimits& limits, int maxSteps);
+    void BuildElectronIonisation(const ProcessLimits& limits, int maxSteps);
+    void BuildElectronBremsstrahlung(const ProcessLimits& limits, int maxSteps);
+    void BuildElectronCoulombScattering(const ProcessLimits& limits, int maxSteps);
+
+    void BuildPairProduction(const ProcessLimits& limits, int maxSteps);
+
 
     G4int                  maxGlobalSteps;            //< Maximum number of steps
     std::map<std::string, ProcessLimits> processes;   //< Processes and the way they are limitted
