@@ -36,7 +36,7 @@ waterbox.material = "G4_WATER"
 keV = gate.g4_units("keV")
 mm = gate.g4_units("mm")
 Bq = gate.g4_units("Bq")
-source = sim.add_source("Generic", "Default")
+source = sim.add_source("GenericSource", "Default")
 source.particle = "gamma"
 source.energy.mono = 80 * keV
 source.direction.type = "momentum"
@@ -47,15 +47,12 @@ source.activity = 200000 * Bq
 stats = sim.add_actor("SimulationStatisticsActor", "Stats")
 stats.track_types_flag = True
 
-# create G4 objects
-sim.initialize()
-
 # start simulation
 # sim.apply_g4_command("/run/verbose 1")
-sim.start()
+output = sim.start()
 
 # get result
-stats = sim.get_actor("Stats")
+stats = output.get_actor("Stats")
 
 # gate_test4_simulation_stats_actor
 # Gate mac/main.mac

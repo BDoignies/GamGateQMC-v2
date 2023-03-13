@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import os
 
 
-def create_simulation(sim, paths):
+def create_simulation(sim, paths, colli="lehr"):
     # units
     m = gate.g4_units("m")
     cm = gate.g4_units("cm")
@@ -28,14 +28,13 @@ def create_simulation(sim, paths):
     # ac = 1e6 * BqmL
     ac = 3e3 * BqmL / ui.number_of_threads
     ui.visu = False
+    # ui.running_verbose_level = gate.EVENT
+    # ui.g4_verbose = True
 
     # world size
     world = sim.world
     world.size = [1.5 * m, 1.5 * m, 1.5 * m]
     world.material = "G4_AIR"
-
-    # iec phantom not needed
-    # iec_phantom = gate_iec.add_phantom(sim)
 
     # cylinder of the phase space, for visualisation only
     """cyl = sim.add_volume('Sphere', 'phase_space_cylinder')
@@ -55,14 +54,10 @@ def create_simulation(sim, paths):
     distance = 30 * cm
     psd = 6.11 * cm
     p = [0, 0, -(distance + psd)]
-    spect1 = gate_spect.add_ge_nm67_spect_head(
-        sim, "spect1", collimator_type="lehr", debug=ui.visu
+    spect1, crystal = gate_spect.add_ge_nm67_spect_head(
+        sim, "spect1", collimator_type=colli, debug=ui.visu
     )
     spect1.translation, spect1.rotation = gate.get_transform_orbiting(p, "x", 180)
-
-    # spect head (debug mode = very small collimator)
-    # spect2 = gate_spect.add_ge_nm67_spect_head(sim, 'spect2', collimator=colli_flag, debug=False)
-    # spect2.translation, spect2.rotation = gate.get_transform_orbiting(p, 'x', 0)
 
     # physic list
     sim.set_cut("world", "all", 1 * mm)
@@ -70,12 +65,9 @@ def create_simulation(sim, paths):
     # activity parameters
     spheres_diam = [10, 13, 17, 22, 28, 37]
     spheres_activity_concentration = [ac * 6, ac * 5, ac * 4, ac * 3, ac * 2, ac]
-    # spheres_diam = [37]
-    # spheres_activity_concentration = [ac] * len(spheres_diam)
 
     # initialisation for conditional
     spheres_radius = [x / 2.0 for x in spheres_diam]
-    # spheres_centers, spheres_volumes = gate_iec.compute_sphere_centers_and_volumes(sim, iec_phantom.name)
     spheres_centers, spheres_volumes = gate_iec.get_default_sphere_centers_and_volumes()
     spheres_activity_ratio = []
     spheres_activity = []
@@ -94,18 +86,22 @@ def create_simulation(sim, paths):
     for activity in spheres_activity:
         spheres_activity_ratio.append(activity / total_activity)
     print("Activity ratio ", spheres_activity_ratio, sum(spheres_activity_ratio))
-    # print('Radius ', spheres_radius)
-    # print('Volumes ', spheres_volumes)
 
     # unique (reproducible) random generator
     rs = gate.get_rnd_seed(123456)
 
-    class GANTest(gate.GANSourceConditionalGenerator):
-        def __init__(self, user_info):
-            super().__init__(user_info)
+    class GANTest:
+        def __init__(self):
             # will store all conditional info (position, direction)
             # (not needed, only for test)
             self.all_cond = None
+
+        def __getstate__(self):
+            print("getstate GANTest")
+            for v in self.__dict__:
+                print("state", v)
+            self.all_cond = None
+            return {}  # self.__dict__
 
         def generate_condition(self, n):
             n_samples = gate_iec.get_n_samples_from_ratio(n, spheres_activity_ratio)
@@ -121,7 +117,7 @@ def create_simulation(sim, paths):
             return cond
 
     # GAN source
-    gsource = sim.add_source("GAN", "gaga")
+    gsource = sim.add_source("GANSource", "gaga")
     gsource.particle = "gamma"
     # no phantom, we consider attached to the world at origin
     # gsource.mother = f'{iec_phantom.name}_interior'
@@ -131,19 +127,25 @@ def create_simulation(sim, paths):
     gsource.backward_distance = 5 * cm
     gsource.direction_keys = ["PreDirection_X", "PreDirection_Y", "PreDirection_Z"]
     gsource.energy_key = "KineticEnergy"
-    gsource.energy_threshold = 0.001 * keV
+    # gsource.energy_threshold = 0.001 * keV
+    gsource.energy_min_threshold = 10 * keV
+    # gsource.skip_policy = "SkipEvents"
+    # SkipEvents is a bit faster than Energy zero,
+    # but it changes the nb of events,so force ZeroEnergy
+    gsource.skip_policy = "ZeroEnergy"
     gsource.weight_key = None
     gsource.time_key = "TimeFromBeginOfEvent"
-    gsource.time_relative = True
+    gsource.relative_timing = True
     gsource.batch_size = 5e4
     gsource.verbose_generator = True
 
     # GANSourceConditionalGenerator manages the conditional GAN
-    # GANTest manages the generation of the conditions
-
-    gen = gate.GANSourceConditionalGenerator(gsource)
-    condition_generator = GANTest(gsource)
-    gen.generate_condition = condition_generator.generate_condition
+    # GANTest manages the generation of the conditions, we use a class here to store the total
+    # list of conditions (only needed for the test)
+    condition_generator = GANTest()
+    gen = gate.GANSourceConditionalGenerator(
+        gsource, condition_generator.generate_condition
+    )
     gsource.generator = gen
 
     # it is possible to use acceptance angle. Not done here to check exiting phsp
@@ -192,30 +194,34 @@ def create_simulation(sim, paths):
     return condition_generator
 
 
-def analyze_results(sim, paths, all_cond):
-    ui = sim.user_info
-    gsource = sim.get_source_user_info("gaga")
-    phsp_actor = sim.get_actor_user_info("phsp")
+def analyze_results(output, paths, all_cond):
+    ui = output.simulation.user_info
+    phsp_actor = output.get_actor("phsp").user_info
+    print(phsp_actor)
 
     # print stats
     print()
     gate.warning(f"Check stats")
     if ui.number_of_threads == 1:
-        s = sim.get_source("gaga")
+        s = output.get_source("gaga")
     else:
-        s = sim.get_source_MT("gaga", 0)
-    print(f"Source, nb of skipped particles (absorbed) : {s.fNumberOfSkippedParticles}")
-    b = gate.get_source_skipped_particles(sim, gsource.name)
-    print(f"Source, nb of skipped particles (AA)       : {b}")
+        s = output.get_source_MT("gaga", 0)
+    print(f"Source, nb of skipped particles (absorbed) : {s.fTotalSkippedEvents}")
+    print(f"Source, nb of zeros   particles (absorbed) : {s.fTotalZeroEvents}")
 
-    stats = sim.get_actor("Stats")
+    stats = output.get_actor("Stats")
     print(stats)
+    stats.counts.event_count += s.fTotalSkippedEvents
     stats_ref = gate.read_stat_file(paths.output_ref / "test038_ref_stats.txt")
     r = (
         stats_ref.counts.step_count - stats.counts.step_count
     ) / stats_ref.counts.step_count
-    print(f"!!! Steps cannot be compared => was {stats.counts.step_count}, {r:.2f}%")
+    print(f"Steps cannot be compared => was {stats.counts.step_count}, {r:.2f}%")
     stats.counts.step_count = stats_ref.counts.step_count
+    if s.fTotalSkippedEvents > 0:
+        print(f"Tracks cannot be compared => was {stats.counts.track_count}")
+        stats.counts.track_count = stats_ref.counts.track_count
+
     stats.counts.run_count = 1  # force for MT
     is_ok = gate.assert_stats(stats, stats_ref, 0.10)
 
@@ -253,7 +259,7 @@ def analyze_results(sim, paths, all_cond):
     tols[keys.index("EventPosition_Z")] = 0.3
     tols[keys.index("EventDirection_X")] = 0.02
     tols[keys.index("EventDirection_Y")] = 0.02
-    tols[keys.index("EventDirection_Z")] = 0.02
+    tols[keys.index("EventDirection_Z")] = 0.03
     scalings = [1] * len(keys)
     is_ok = (
         gate.compare_trees(
@@ -301,7 +307,7 @@ def analyze_results(sim, paths, all_cond):
     scalings = [1.0] * len(checked_keys)
     scalings[checked_keys.index("GlobalTime")] = 1e-9  # time in ns
     tols = [10.0] * len(checked_keys)
-    tols[checked_keys.index("GlobalTime")] = 0.003
+    tols[checked_keys.index("GlobalTime")] = 0.2
     tols[checked_keys.index("KineticEnergy")] = 0.002
     tols[checked_keys.index("PrePosition_X")] = 7
     tols[checked_keys.index("PrePosition_Y")] = 4

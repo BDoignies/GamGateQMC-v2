@@ -17,7 +17,7 @@ sim = gate.Simulation()
 ui = sim.user_info
 ui.g4_verbose = False
 ui.visu = False
-ui.check_volumes_overlap = False
+ui.check_volumes_overlap = True
 
 #  change world size
 m = gate.g4_units("m")
@@ -39,7 +39,7 @@ print(n)
 elems = ["Lu"]  # , 'Yttrium', 'Silicon', 'Oxygen']
 nbAtoms = [18]  # , 2, 10, 50]
 gcm3 = gate.g4_units("g/cm3")
-n.ConstructNewMaterial("LYSO", elems, nbAtoms, 7.1 * gcm3)
+n.ConstructNewMaterialNbAtoms("LYSO", elems, nbAtoms, 7.1 * gcm3)
 
 # repeat a box
 crystal = sim.add_volume("Box", "crystal")
@@ -64,7 +64,7 @@ crystal.repeat = le
 # (it is more efficient)
 
 # default source for tests
-source = sim.add_source("Generic", "Default")
+source = sim.add_source("GenericSource", "Default")
 MeV = gate.g4_units("MeV")
 Bq = gate.g4_units("Bq")
 source.particle = "gamma"
@@ -97,17 +97,11 @@ print(
     "The Dose actor is attached to the first (repeated) crystal, it moves with its coord system."
 )
 
-# create G4 objects
-sim.initialize()
-
-# explicit check overlap (already performed during initialize)
-sim.check_volumes_overlap(verbose=True)
-
 # start simulation
-sim.start()
+output = sim.start()
 
 # print results
-stats = sim.get_actor("Stats")
+stats = output.get_actor("Stats")
 # stats.write(ref_path / 'test017-stats-ref.txt')
 
 # tests

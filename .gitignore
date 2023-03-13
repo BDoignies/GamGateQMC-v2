@@ -68,6 +68,11 @@ __pycache__
 /opengate/tests/src/output.pdf
 /opengate/tests/output_save
 /opengate/tests/src/garf
+/opengate/tests/src/temp_output
+/opengate/tests/src/test_visu
+/opengate/tests/src/intevo
+/opengate/tests/src/*.vrml
+/opengate/tests/src/*.wrl
 
 /cmake-build-debug
 /cmake-build-release
@@ -104,8 +109,10 @@ __pycache__
 /core/opengate_core/*so
 /core/opengate_core/geant4_data
 /core/opengate_core/geant4_data_old
+/core/opengate_core/geant4_data_11.02
 /core/opengate_core/save
 /core/opengate_core/.idea
+/core/save
 
 
 /build_test/
@@ -121,3 +128,12 @@ preload.sh
 
 /compile_commands.json
 /.cache/
+
+opengate/tests/src/log_G4_11.0.txt
+opengate/tests/fake.md
+.vscode/c_cpp_properties.json
+.vscode/settings.json
+.kdev4/
+opengate.kdev4
+opengate/tests/singles.root
+singles.root

@@ -64,10 +64,10 @@ print("List of material in ", fn)
 
 # test material files
 gate.warning(f"Check materials")
-fake_list = []
-db1 = gate.MaterialDatabase(str(paths.gate_data / "patient-HUmaterials.db"), fake_list)
-fake_list = []
-db2 = gate.MaterialDatabase(fn, fake_list)
+db1 = gate.MaterialDatabase()
+db1.read_from_file(str(paths.gate_data / "patient-HUmaterials.db"))
+db2 = gate.MaterialDatabase()
+db2.read_from_file(fn)
 is_ok = True
 for m1 in db1.material_builders:
     m2 = db2.material_builders[m1]
@@ -75,11 +75,12 @@ for m1 in db1.material_builders:
     t = gate.assert_same_material(m1, m2)
     is_ok = gate.print_test(t, f"check {m1.name}") and is_ok
 
+
 # write the image of labels (None by default)
 patient.dump_label_image = paths.output / "test009_hu_label.mhd"
 
 # default source for tests
-source = sim.add_source("Generic", "mysource")
+source = sim.add_source("GenericSource", "mysource")
 source.energy.mono = 130 * MeV
 source.particle = "proton"
 source.position.type = "sphere"
@@ -107,9 +108,6 @@ dose.hit_type = "random"
 stats = sim.add_actor("SimulationStatisticsActor", "Stats")
 stats.track_types_flag = False
 
-# create G4 objects
-sim.initialize()
-
 # print info
 print(sim.dump_volumes())
 
@@ -117,14 +115,13 @@ print(sim.dump_volumes())
 sim.apply_g4_command("/tracking/verbose 0")
 
 # start simulation
-
-sim.start()
+output = sim.start()
 
 # print results at the end
 gate.warning(f"Check stats")
-stat = sim.get_actor("Stats")
+stat = output.get_actor("Stats")
 print(stat)
-d = sim.get_actor("dose")
+d = output.get_actor("dose")
 print(d)
 
 # tests

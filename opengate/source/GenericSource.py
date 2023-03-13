@@ -11,7 +11,7 @@ class GenericSource(gate.SourceBase):
     GeneriSource close to the G4 SPS, but a bit simpler.
     """
 
-    type_name = "Generic"
+    type_name = "GenericSource"
 
     @staticmethod
     def set_default_user_info(user_info):
@@ -24,6 +24,8 @@ class GenericSource(gate.SourceBase):
         user_info.weight = -1
         user_info.weight_sigma = -1
         user_info.half_life = -1  # negative value is no half_life
+        user_info.tac_times = None
+        user_info.tac_activities = None
         # ion
         user_info.ion = Box()
         user_info.ion.Z = 0  # Z: Atomic Number
@@ -46,6 +48,7 @@ class GenericSource(gate.SourceBase):
         user_info.direction.focus_point = [0, 0, 0]
         user_info.direction.sigma = [0, 0]
         user_info.direction.acceptance_angle = Box()
+        user_info.direction.acceptance_angle.skip_policy = "SkipEvents"  # or ZeroEnergy
         user_info.direction.acceptance_angle.volumes = []
         user_info.direction.acceptance_angle.intersection_flag = False
         user_info.direction.acceptance_angle.normal_flag = False
@@ -58,8 +61,8 @@ class GenericSource(gate.SourceBase):
         user_info.energy.mono = 0
         user_info.energy.sigma_gauss = 0
         user_info.energy.is_cdf = False
-        user_info.energy.min_energy = 0
-        user_info.energy.max_energy = 0
+        user_info.energy.min_energy = None
+        user_info.energy.max_energy = None
 
     def __del__(self):
         pass
@@ -78,6 +81,10 @@ class GenericSource(gate.SourceBase):
             self.user_info.ion.A = words[2]
         if len(words) > 3:
             self.user_info.ion.E = words[3]
+
+        # will be set by g4 source
+        self.fTotalZeroEvents = 0
+        self.fTotalSkippedEvents = 0
 
     def initialize(self, run_timing_intervals):
         # Check user_info type
@@ -107,7 +114,8 @@ class GenericSource(gate.SourceBase):
             "F18_analytic",
             "O15_analytic",
             "C11_analytic",
-            "spectrum",
+            "histogram",
+            "spectrum_lines",
             "range",
         ]
         l.extend(gate.all_beta_plus_radionuclides)
@@ -118,6 +126,7 @@ class GenericSource(gate.SourceBase):
             )
 
         # special case for beta plus energy spectra
+        # FIXME put this elsewhere
         if self.user_info.particle == "e+":
             if self.user_info.energy.type in gate.all_beta_plus_radionuclides:
                 data = gate.read_beta_plus_spectra(self.user_info.energy.type)
@@ -130,6 +139,8 @@ class GenericSource(gate.SourceBase):
                 self.g4_source.SetEnergyCDF(ene)
                 self.g4_source.SetProbabilityCDF(cdf)
 
+        self.update_tac_activity()
+
         # initialize
         gate.SourceBase.initialize(self, run_timing_intervals)
 
@@ -138,10 +149,10 @@ class GenericSource(gate.SourceBase):
         if self.user_info.n == 0 and self.user_info.activity == 0:
             gate.fatal(f"Choose either n or activity : {self.user_info}")
         if self.user_info.activity > 0:
-            self.user_info.n = -1
+            self.user_info.n = 0
         if self.user_info.n > 0:
-            self.user_info.activity = -1
-        # warning for non used ?
+            self.user_info.activity = 0
+        # warning for non-used ?
         # check confine
         if self.user_info.position.confine:
             if self.user_info.position.type == "point":
@@ -150,14 +161,47 @@ class GenericSource(gate.SourceBase):
                     f"confine is used, while position.type is point ... really ?"
                 )
 
+    def prepare_output(self):
+        gate.SourceBase.prepare_output(self)
+        # store the output from G4 object
+        self.fTotalZeroEvents = self.g4_source.fTotalZeroEvents
+        self.fTotalSkippedEvents = self.g4_source.fTotalSkippedEvents
 
-def get_source_skipped_particles(sim, source_name):
-    ui = sim.user_info
+    def update_tac_activity(self):
+        ui = self.user_info
+        if ui.tac_times is None and ui.tac_activities is None:
+            return
+        n = len(ui.tac_times)
+        if n != len(ui.tac_activities):
+            gate.fatal(
+                f"option tac_activities must have the same size than tac_times in source '{ui.name}'"
+            )
+        # it is important to set the starting time for this source as the tac
+        # may start later than the simulation timing
+        ui.start_time = ui.tac_times[0]
+        ui.activity = ui.tac_activities[0]
+        self.g4_source.SetTAC(ui.tac_times, ui.tac_activities)
+
+
+def get_source_skipped_events(output, source_name):
+    ui = output.simulation.user_info
     n = 0
     if ui.number_of_threads > 1 or ui.force_multithread_mode:
-        for i in range(1, sim.user_info.number_of_threads + 1):
-            s = sim.get_source_MT(source_name, i)
-            n += s.fAASkippedParticles
+        for i in range(1, ui.number_of_threads + 1):
+            s = output.get_source_MT(source_name, i)
+            n += s.fTotalSkippedEvents
     else:
-        n = sim.get_source(source_name).fAASkippedParticles
+        n = output.get_source(source_name).fTotalSkippedEvents
+    return n
+
+
+def get_source_zero_events(output, source_name):
+    ui = output.simulation.user_info
+    n = 0
+    if ui.number_of_threads > 1 or ui.force_multithread_mode:
+        for i in range(1, ui.number_of_threads + 1):
+            s = output.get_source_MT(source_name, i)
+            n += s.fTotalZeroEvents
+    else:
+        n = output.get_source(source_name).fTotalZeroEvents
     return n

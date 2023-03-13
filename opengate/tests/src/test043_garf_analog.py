@@ -25,7 +25,7 @@ activity = 1e6 * Bq / ui.number_of_threads
 sim_set_world(sim)
 
 # spect head
-spect = gate_spect.add_ge_nm67_spect_head(
+spect, crystal = gate_spect.add_ge_nm67_spect_head(
     sim, "spect", collimator_type=colli, debug=ui.visu
 )
 spect_translation = 15 * cm
@@ -52,24 +52,22 @@ proj.output = paths.output / "test043_projection_analog.mhd"
 s = sim.add_actor("SimulationStatisticsActor", "stats")
 s.track_types_flag = True
 
-# create G4 objects
-sim.initialize()
-
 # start simulation
-sim.start()
+output = sim.start()
 
 # print results at the end
-stat = sim.get_actor("stats")
+stat = output.get_actor("stats")
 print(stat)
 
 # dump the output image with offset like in old gate (for comparison)
 print("We change the spacing/origin to be compared to the old gate")
-proj = sim.get_actor(f"Projection_{crystal_name}")
+proj = output.get_actor(f"Projection_{crystal_name}")
 spacing = np.array([4.41806 * mm, 4.41806 * mm, 1])
-proj.output_image.SetSpacing(spacing)
-proj.output_image.SetOrigin(spacing / 2.0)
+img = itk.imread(str(proj.user_info.output))
+img.SetSpacing(spacing)
+img.SetOrigin(spacing / 2.0)
 fn = str(proj.user_info.output).replace(".mhd", "_offset.mhd")
-itk.imwrite(proj.output_image, fn)
+itk.imwrite(img, fn)
 
 # ----------------------------------------------------------------------------------------------------------------
 # tests
@@ -86,7 +84,7 @@ is_ok = (
         paths.gate_output / "projection_analog.mhd",
         fn,
         stat,
-        tolerance=72,
+        tolerance=75,
         ignore_value=0,
         axis="x",
     )

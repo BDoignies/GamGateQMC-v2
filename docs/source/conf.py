@@ -79,7 +79,7 @@ numfig_secnum_depth = 1
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = "en"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -253,3 +253,4 @@ epub_exclude_files = ["search.html"]
 # sphinx-autoapi configuration
 autoapi_type = "python"
 autoapi_dirs = ["../../opengate", "../../core"]
+autoapi_ignore = ["*/opengate/tests/src*"]

@@ -48,9 +48,16 @@ def create_3d_image(size, spacing, pixel_type="float", allocate=True, fill_value
     return img
 
 
-def create_image_like(like_image, allocate=True):
+def create_image_like(like_image, allocate=True, pixel_type=""):
+    # TODO fix pixel_type -> copy from image rather than argument
     info = get_info_from_image(like_image)
-    img = create_3d_image(info.size, info.spacing, allocate=allocate)
+
+    if pixel_type:
+        img = create_3d_image(
+            info.size, info.spacing, pixel_type=pixel_type, allocate=allocate
+        )
+    else:
+        img = create_3d_image(info.size, info.spacing, allocate=allocate)
     img.SetOrigin(info.origin)
     img.SetDirection(info.dir)
     return img
@@ -73,6 +80,7 @@ def get_info_from_image(image):
 
 
 def read_image_info(filename):
+    filename = str(filename)
     image_IO = itk.ImageIOFactory.CreateImageIO(
         filename, itk.CommonEnums.IOFileMode_ReadMode
     )
@@ -158,8 +166,8 @@ def get_translation_from_iso_center(img_info, rot, iso_center, centered):
     gate.fatal(f"not implemented yet")
 
 
-def get_physical_volume(sim, vol_name, physical_volume_index):
-    vol = sim.volume_manager.get_volume(vol_name)
+def get_physical_volume(volume_engine, vol_name, physical_volume_index):
+    vol = volume_engine.get_volume(vol_name)
     vols = vol.g4_physical_volumes
     if len(vols) == 0:
         gate.fatal(
@@ -218,9 +226,14 @@ def create_image_with_volume_extent(sim, vol_name, spacing=[1, 1, 1], margin=0):
     return image
 
 
-def voxelize_volume(sim, vol_name, image):
+def voxelize_volume(se, vol_name, image):
+    # simulation engine
+    if not se.is_initialized:
+        se.initialize()
+    # initialization is needed because it builds the hierarchy of G4 volumes
+    # that are needed by the "voxelize" function
     # get physical volume
-    vol = sim.volume_manager.get_volume(vol_name).g4_physical_volume
+    vol = se.volume_engine.get_volume(vol_name).g4_physical_volume
     if vol.GetMultiplicity() != 1:
         gate.warning(
             f"Warning the volume {vol_name} is multiple: "
@@ -228,7 +241,7 @@ def voxelize_volume(sim, vol_name, image):
         )
 
     # world volume
-    world = sim.volume_manager.get_volume("world").g4_physical_volume
+    world = se.volume_engine.get_volume("world").g4_physical_volume
 
     # navigator
     nav = g4.G4Navigator()
@@ -247,7 +260,8 @@ def voxelize_volume(sim, vol_name, image):
 
 def transform_images_point(p, img1, img2):
     index = img1.TransformPhysicalPointToIndex(p)
-    return img2.TransformIndexToPhysicalPoint(index)
+    pbis = img2.TransformIndexToPhysicalPoint(index)
+    return [i for i in pbis]
 
 
 def compute_image_3D_CDF(image):
@@ -300,3 +314,70 @@ def scale_itk_image(img, scale):
     img2 = itk.image_from_array(imgarr)
     img2.CopyInformation(img)
     return img2
+
+
+def divide_itk_images(
+    img1_numerator, img2_denominator, filterVal=0, replaceFilteredVal=0
+):
+    imgarr1 = itk.array_view_from_image(img1_numerator)
+    imgarr2 = itk.array_view_from_image(img2_denominator)
+    imgarrOut = imgarr1.copy()
+    L_filterInv = imgarr2 != filterVal
+    imgarrOut[L_filterInv] = np.divide(imgarr1[L_filterInv], imgarr2[L_filterInv])
+
+    imgarrOut[np.invert(L_filterInv)] = replaceFilteredVal
+    imgarrOut = itk.image_from_array(imgarrOut)
+    imgarrOut.CopyInformation(img1_numerator)
+    return imgarrOut
+
+
+def split_spect_projections(input_filenames, nb_ene):
+    """
+    The inputs are filenames of several images containing projections for a given spect head
+    Each image is composed of nb_ene energy windows and XX angles.
+    The number of angles is found by looking at the number of slices.
+
+    The function computes nb_ene itk image with all angles and all heads merged into a list of
+    projections stored as a 3D image, to make it easy to reconstruct with RTK.
+
+    """
+    nb_heads = len(input_filenames)
+
+    # read the first image to get information
+    img = itk.imread(str(input_filenames[0]))
+    info = gate.get_info_from_image(img)
+    imga = itk.array_view_from_image(img)
+
+    nb_runs = imga.shape[0] // nb_ene
+    nb_angles = nb_heads * nb_runs
+    # print('Number of heads', nb_heads)
+    # print('Number of E windows', nb_ene)
+    # print('Number of run', nb_runs)
+    # print('Number of angles', nb_angles)
+
+    # create and allocate final images
+    outputs_img = []
+    outputs_arr = []
+    size = [imga.shape[1], imga.shape[2], nb_angles]
+    spacing = info.spacing
+    for e in range(nb_ene):
+        image = gate.create_3d_image(size, spacing)
+        image.SetOrigin(img.GetOrigin())
+        outputs_img.append(image)
+        outputs_arr.append(itk.array_view_from_image(image))
+
+    # loop on heads and create images
+    s2 = 0
+    for head in range(nb_heads):
+        img = itk.imread(str(input_filenames[head]))
+        imga = itk.array_view_from_image(img)
+        e = 0
+        for s in range(imga.shape[0]):
+            outputs_arr[e][s2] = imga[s]
+            e += 1
+            if e >= nb_ene:
+                e = 0
+                s2 += 1
+
+    # end
+    return outputs_img

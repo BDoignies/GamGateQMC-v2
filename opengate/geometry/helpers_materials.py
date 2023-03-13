@@ -51,7 +51,7 @@ def read_voxel_materials(filename, def_mat="G4_AIR"):
     return pix_mat
 
 
-def new_material(name, density, elements, weights=[1]):
+def new_material_weights(name, density, elements, weights=[1]):
     n = g4.G4NistManager.Instance()
     if not isinstance(elements, list):
         elements = [elements]
@@ -63,6 +63,20 @@ def new_material(name, density, elements, weights=[1]):
     total = np.sum(weights)
     weights = weights / total
     m = n.ConstructNewMaterialWeights(name, elements, weights, density)
+    return m
+
+
+def new_material_nb_atoms(name, density, elements, nb_atoms):
+    n = g4.G4NistManager.Instance()
+    if not isinstance(elements, list):
+        elements = [elements]
+    if len(elements) != len(nb_atoms):
+        gate.fatal(
+            f"Cannot create the new material, the elements and the "
+            f"nb_atoms does not have the same size: {elements} and {nb_atoms}"
+        )
+    nb_atoms = [int(x) for x in nb_atoms]
+    m = n.ConstructNewMaterialNbAtoms(name, elements, nb_atoms, density)
     return m
 
 
@@ -279,9 +293,9 @@ def assert_same_material(m1, m2):
         print(m1)
         print(m2)
         return False
-    for e1 in m1.elements:
-        e2 = m2.elements[elements_name_symbol[e1]]
-        e1 = m1.elements[e1]
+    for e1 in m1.components:
+        e2 = m2.components[elements_name_symbol[e1]]
+        e1 = m1.components[e1]
         if elements_name_symbol[e1.name] != e2.name:
             print("Error while comparing materials", m1, m2)
             print(e1, e2)
@@ -296,3 +310,26 @@ def assert_same_material(m1, m2):
             return False
 
     return True
+
+
+def read_next_line(f):
+    line = f.readline()
+    return line.strip().replace("\t", " ")
+
+
+def read_tag(s, tag):
+    w = s.split("=")
+    if w[0].strip() != tag:
+        return None
+    value = w[1].strip()
+    return value
+
+
+def read_tag_with_unit(s, tag):
+    w = s.split("=")
+    if w[0].strip() != tag:
+        return None
+    w = w[1].split()
+    value = float(w[0])
+    u = gate.g4_units(w[1].strip())
+    return value * u

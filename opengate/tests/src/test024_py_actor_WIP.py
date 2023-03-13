@@ -29,7 +29,7 @@ waterbox.material = "G4_WATER"
 keV = gate.g4_units("keV")
 mm = gate.g4_units("mm")
 Bq = gate.g4_units("Bq")
-source = sim.add_source("Generic", "Default")
+source = sim.add_source("GenericSource", "Default")
 source.particle = "gamma"
 source.energy.mono = 80 * keV
 source.direction.type = "momentum"
@@ -44,13 +44,13 @@ sim.add_actor("TestActor", "Stats2")
 sim.initialize()
 
 # start simulation
-sim.start()
+output = sim.start()
 
-stats = sim.get_actor("Stats")
+stats = output.get_actor("Stats")
 print(stats)
 print("-" * 50)
 
-stats = sim.get_actor("Stats2")
+stats = output.get_actor("Stats2")
 print(stats)
 
 # FIXME todo

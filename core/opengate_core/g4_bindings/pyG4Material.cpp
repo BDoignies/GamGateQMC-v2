@@ -22,7 +22,7 @@ void init_G4Material(py::module &m) {
       .def(py::init<const G4String &, G4double, G4int, G4State, G4double,
                     G4double>())
 
-      // stream output /// not sure this is the right way to do
+      // stream output /// not sure if this is the right way to do
       .def("__repr__",
            [](const G4Material &material) {
              std::ostringstream flux;
@@ -30,12 +30,8 @@ void init_G4Material(py::module &m) {
              return flux.str();
            })
 
-      .def("AddElement", [](G4Material &ma, G4Element *element,
-                            G4int nAtoms) { ma.AddElement(element, nAtoms); })
-      .def("AddElement",
-           [](G4Material &ma, G4Element *element, G4double fraction) {
-             ma.AddElement(element, fraction);
-           })
+      .def("AddElementByNumberOfAtoms", &G4Material::AddElementByNumberOfAtoms)
+      .def("AddElementByMassFraction", &G4Material::AddElementByMassFraction)
 
       .def("GetElementFraction",
            [](G4Material &ma, int i) -> double {
@@ -69,13 +65,11 @@ void init_G4Material(py::module &m) {
       .def("GetRadlen", &G4Material::GetRadlen)
       .def("GetNuclearInterLength", &G4Material::GetNuclearInterLength)
       .def("GetIonisation", &G4Material::GetIonisation,
-           py::return_value_policy::
-               reference_internal) //,
-                                   //	 return_internal_reference<>())
+           py::return_value_policy::reference_internal) //,
+      //	 return_internal_reference<>())
       .def("GetSandiaTable", &G4Material::GetSandiaTable,
-           py::return_value_policy::
-               reference_internal) //,
-                                   //	 return_internal_reference<>())
+           py::return_value_policy::reference_internal) //,
+      //	 return_internal_reference<>())
 
       .def("GetZ", &G4Material::GetZ)
       .def("GetA", &G4Material::GetA)

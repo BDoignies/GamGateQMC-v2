@@ -59,7 +59,7 @@ patient.voxel_materials = vm
 patient.dump_label_image = paths.output / "test009_label.mhd"
 
 # default source for tests
-source = sim.add_source("Generic", "mysource")
+source = sim.add_source("GenericSource", "mysource")
 source.energy.mono = 130 * MeV
 source.particle = "proton"
 source.position.type = "sphere"
@@ -87,9 +87,6 @@ dose.hit_type = "random"
 stats = sim.add_actor("SimulationStatisticsActor", "Stats")
 stats.track_types_flag = True
 
-# create G4 objects
-sim.initialize()
-
 # print info
 print(sim.dump_volumes())
 
@@ -97,13 +94,12 @@ print(sim.dump_volumes())
 sim.apply_g4_command("/tracking/verbose 0")
 
 # start simulation
-
-sim.start()
+output = sim.start(True)
 
 # print results at the end
-stat = sim.get_actor("Stats")
+stat = output.get_actor("Stats")
 print(stat)
-d = sim.get_actor("dose")
+d = output.get_actor("dose")
 print(d)
 
 # tests

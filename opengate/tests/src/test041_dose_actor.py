@@ -54,7 +54,7 @@ p.physics_list_name = "QGSP_BERT_EMV"
 sim.set_cut("world", "all", 1 * mm)
 
 # default source for tests
-source = sim.add_source("Generic", "mysource")
+source = sim.add_source("GenericSource", "mysource")
 source.energy.mono = 115 * MeV
 source.particle = "proton"
 source.position.type = "disc"
@@ -81,17 +81,14 @@ dose.hit_type = "random"
 s = sim.add_actor("SimulationStatisticsActor", "Stats")
 s.track_types_flag = True
 
-# create G4 objects
-sim.initialize()
-
 # start simulation
-sim.start()
+output = sim.start(True)
 
 # print results at the end
-stat = sim.get_actor("Stats")
+stat = output.get_actor("Stats")
 print(stat)
 
-dose = sim.get_actor("dose")
+dose = output.get_actor("dose")
 print(dose)
 
 # tests

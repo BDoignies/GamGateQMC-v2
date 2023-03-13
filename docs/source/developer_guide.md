@@ -22,13 +22,21 @@ Note that you need to also clone the included submodules (pybind11, all data for
 
 First step: compile `opengate_core` (this is the hardest part). You need to set the path to build Geant4 and ITK libraries ; it means you need first to download and compile both [Geant4](https://geant4.web.cern.ch) and [ITK](https://itk.org).
 
-#### STEP 1 - Geant4
+#### STEP 1 - Geant4 and Qt
 
+You must be in the conda environment created before and install qt5 **before** installing Geant4 so that Geant4 can find the correct qt lib:
+
+```bash
+  conda install qt=5
+```
+
+You must be in the conda environment created before and install qt5 **before** installing Geant4 so that Geant4 can find the correct qt lib:
 For **Geant4**, you need to compile with the following options:
 
 ```bash
 git clone --branch v11.0.2 https://github.com/Geant4/geant4.git --depth 1
 mkdir geant4.11-build
+cd geant4.11-build
 cmake -DCMAKE_CXX_FLAGS=-std=c++17 \
       -DGEANT4_INSTALL_DATA=ON \
       -DGEANT4_INSTALL_DATADIR=$HOME/software/geant4/data \
@@ -45,13 +53,14 @@ For **ITK**, you need to compile with the following options:
 
 ```bash
 git clone --branch v5.1.0 https://github.com/InsightSoftwareConsortium/ITK.git --depth 1
-mkir build-v5.1.0
+mkdir build-v5.1.0
+cd build-v5.1.0
 cmake -DCMAKE_CXX_FLAGS=-std=c++17 \
       -DBUILD_TESTING=OFF \
       -DITK_USE_FFTWD=ON \
       -DITK_USE_FFTWF=ON \
       -DITK_USE_SYSTEM_FFTW:BOOL=ON \
-      ../src
+      ../ITK
 make -j 32
 ```
 
@@ -61,7 +70,7 @@ Once it is done, you can compile `opengate_core`.
 
 ```bash
 pip install colored
-cd <path-to>/opengate_core
+cd <path-to-opengate>/core
 export CMAKE_PREFIX_PATH=<path-to>/geant4.11-build/:<path-to>/build-v5.1.0/:${CMAKE_PREFIX_PATH}
 pip install -e . -v
 ```
@@ -73,7 +82,7 @@ The pip install will run cmake, compile the sources and create the module. If yo
 The second part is easier : just go in the main folder and pip install:
 
 ```bash
-cd <path-to>/opengate
+cd <path-to-opengate>
 pip install -e . -v
 ```
 
@@ -198,14 +207,14 @@ And the following methods:
 ---
 ## OPENGATE elements: volumes, physic, sources, actors
 
-A simulation is composed of several elements: some volumes, some sources, some actors and some physics properties. The parameters that can be defined by the user (the person that develop the simulation) are managed by simple dict-like structure. No Geant4 objects are build until the initialization phase. This allow (relative) simplicity in the development.
+A simulation is composed of several elements: some volumes, some sources, some actors and some physics properties. The parameters that can be defined by the user (the person that develop the simulation) are managed by simple dict-like structure. No Geant4 objects are build until the initialization phase. This allows (relative) simplicity in the development.
 
 ### UserInfo (before initialisation)
 
 An 'element' can be a Volume, a Source or an Actor. There are several element type that can be defined and use several time by user. For example, a BoxVolume, with element_type = Volume and type_name = Box. For all element, the user information (`user_info`) is a single structure that contains all parameters to build/manage the element (the size of a BoxVolume, the radius of a SphereVolume, the activity of a GenericSource etc). User info are stored in a dict-like
 structure. This is performed through a `UserInfo` class inheriting from Box.
 
-One single function is used to defined the default keys of a given user info : `set_default_user_info`. This function must be defined as a static method in the class that define the element type (BoxVolume in the previous example).
+One single function is used to define the default keys of a given user info : `set_default_user_info`. This function must be defined as a static method in the class that define the element type (BoxVolume in the previous example).
 
 Examples:
 
@@ -217,14 +226,6 @@ act = sim.add_actor('Type', 'name')         # -> act is UserInfo
 phys = sim.get_physics_user_info()          # -> phys is UserInfo
 filter = sim.add_filter('Type', 'name')     # -> filter is UserInfo
 ```
-
-### During  initialisation
-
-todo
-
-### After initialisation
-
-todo
 
 ---
 ## OPENGATE Geometry
@@ -318,7 +319,7 @@ cpp
 
     - declare list of available branches: explicit name and type
 
-- GateHitsCollectionActor
+- GateDigitizerHitsCollectionActor
 
     - manage a list of Tree and (later) a list of process to create trees
 
@@ -406,6 +407,13 @@ Finally, the new actor must be declared in the `opengate/actor/helpers_actor.py`
 #### 4 - Conclusion
 
 A new actor is defined by two interconnected classes, one in cpp, one in python. User options and parameters are stored in one single dictionary object, build from python side, and read from cpp side. If the user options is complicated, with numerous options and parameters, it is recommended to manage it from python side and only consider a unique minimal set of required options on the cpp side. Reading input and writing output are generally performed on python side.
+
+---
+
+## SimulationEngine
+
+
+
 
 ---
 

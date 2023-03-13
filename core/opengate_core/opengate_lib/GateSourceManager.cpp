@@ -8,8 +8,12 @@
 #include <iostream>
 #include <pybind11/numpy.h>
 
+#ifdef USE_GDML
+#include <G4GDMLParser.hh>
+#endif
 #include <G4MTRunManager.hh>
 #include <G4RunManager.hh>
+#include <G4TransportationManager.hh>
 #include <G4UIExecutive.hh>
 #include <G4UImanager.hh>
 #include <G4UIsession.hh>
@@ -33,6 +37,8 @@ GateSourceManager::GateSourceManager() {
   fVisEx = nullptr;
   fVisualizationVerboseFlag = false;
   fVisualizationFlag = false;
+  fVisualizationTypeFlag = "qt";
+  fVisualizationFile = "g4writertest.gdml";
   fVerboseLevel = 0;
   fCurrentSimulationTime = 0;
   fNextActiveSource = nullptr;
@@ -52,7 +58,16 @@ void GateSourceManager::Initialize(TimeIntervals simulation_times,
   fOptions = options;
   fVisualizationFlag = DictGetBool(options, "visu");
   fVisualizationVerboseFlag = DictGetBool(options, "visu_verbose");
-  fVisCommands = DictGetVecStr(options, "visu_commands");
+  fVisualizationTypeFlag = DictGetStr(options, "visu_type");
+  fVisualizationFile = DictGetStr(options, "visu_filename");
+  if (fVisualizationTypeFlag == "vrml" ||
+      fVisualizationTypeFlag == "vrml_file_only")
+    fVisCommands = DictGetVecStr(options, "visu_commands_vrml");
+  else if (fVisualizationTypeFlag == "gdml" ||
+           fVisualizationTypeFlag == "gdml_file_only")
+    fVisCommands = DictGetVecStr(options, "visu_commands_gdml");
+  else
+    fVisCommands = DictGetVecStr(options, "visu_commands");
   fVerboseLevel = DictGetInt(options, "running_verbose_level");
   InstallSignalHandler();
 
@@ -77,7 +92,7 @@ void GateSourceManager::StartMasterThread() {
   // (only performed in the master thread)
   if (G4Threading::IsMultithreadedApplication()) {
     // (static is needed, dynamic_cast lead to seg fault)
-    auto mt = static_cast<G4MTRunManager *>(G4RunManager::GetRunManager());
+    auto mt = dynamic_cast<G4MTRunManager *>(G4RunManager::GetRunManager());
     if (mt->GetEventModulo() == -1) {
       mt->SetEventModulo(10000); // default value (not a big influence)
       // Much faster with mode 1 than with mode 0 (which is default)
@@ -127,7 +142,10 @@ void GateSourceManager::PrepareRunToStart(int run_id) {
     return;
   }
   fStartNewRun = false;
-  Log(LogLevel_RUN, "Starting run {}\n", run_id);
+  Log(LogLevel_RUN, "Starting run {} ({})\n", run_id,
+      G4Threading::IsMasterThread() == TRUE
+          ? "master"
+          : std::to_string(G4Threading::G4GetThreadId()));
 }
 
 void GateSourceManager::PrepareNextSource() {
@@ -206,11 +224,14 @@ void GateSourceManager::GeneratePrimaries(G4Event *event) {
 }
 
 void GateSourceManager::InitializeVisualization() {
-  if (!fVisualizationFlag)
+  if (!fVisualizationFlag || (fVisualizationTypeFlag == "gdml") ||
+      (fVisualizationTypeFlag == "gdml_file_only"))
     return;
+
   char *argv[1]; // ok on osx
   // char **argv = new char*[1]; // not ok on osx
-  fUIEx = new G4UIExecutive(1, argv, "qt");
+  if (fVisualizationTypeFlag == "qt")
+    fUIEx = new G4UIExecutive(1, argv, "qt");
   // FIXME does not always work on Linux ? only OSX for the moment
   if (fVisEx == nullptr) {
     std::string v = "quiet";
@@ -236,7 +257,24 @@ void GateSourceManager::InitializeVisualization() {
 }
 
 void GateSourceManager::StartVisualization() const {
-  if (!fVisualizationFlag)
+#ifdef USE_GDML
+  if (fVisualizationTypeFlag == "gdml") {
+    G4GDMLParser parser;
+    parser.SetRegionExport(true);
+    parser.Write(fVisualizationFile,
+                 G4TransportationManager::GetTransportationManager()
+                     ->GetNavigatorForTracking()
+                     ->GetWorldVolume()
+                     ->GetLogicalVolume());
+  }
+#else
+  std::cout << "Active GDML with Geant4" << std::endl;
+#endif
+
+  if (!fVisualizationFlag || (fVisualizationTypeFlag == "vrml") ||
+      (fVisualizationTypeFlag == "vrml_file_only") ||
+      (fVisualizationTypeFlag == "gdml") ||
+      (fVisualizationTypeFlag == "gdml_file_only"))
     return;
   fUIEx->SessionStart();
   delete fUIEx;

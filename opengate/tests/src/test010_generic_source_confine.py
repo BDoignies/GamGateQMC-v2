@@ -66,7 +66,7 @@ activity = 500000 * Bq
 # activity = 50 * Bq
 
 # test confined source
-source = sim.add_source("Generic", "non_confined_src")
+source = sim.add_source("GenericSource", "non_confined_src")
 source.mother = "stuff"
 source.particle = "gamma"
 source.activity = activity / ui.number_of_threads
@@ -86,12 +86,12 @@ source.energy.mono = 1 * MeV
    Daughter volumes of 'stuff' do not count : no particle will be generated
    from 'stuff_inside'
 """
-source = sim.add_source("Generic", "confined_src")
+source = sim.add_source("GenericSource", "confined_src")
 source.mother = "stuff"
 source.particle = "gamma"
 source.activity = activity / ui.number_of_threads
 source.position.type = "box"
-source.position.size = gate.get_volume_bounding_size(sim, source.mother)
+source.position.size = gate.get_volume_bounding_box_size(sim, source.mother)
 print("Source size", source.position.size)
 pMin, pMax = gate.get_volume_bounding_limits(sim, source.mother)
 source.position.confine = "stuff"
@@ -101,7 +101,7 @@ source.energy.type = "mono"
 source.energy.mono = 1 * MeV
 
 # actors
-stats = sim.add_actor("SimulationStatisticsActor", "Stats")
+sim.add_actor("SimulationStatisticsActor", "Stats")
 
 dose = sim.add_actor("DoseActor", "dose")
 dose.output = paths.output / "test010-2-edep.mhd"
@@ -110,18 +110,14 @@ dose.mother = "waterbox"
 dose.size = [100, 100, 100]
 dose.spacing = [2 * mm, 1 * mm, 1 * mm]
 
-# create G4 objects
-sim.initialize()
-
-# print after init
-print(sim)
-print("Simulation seed:", sim.actual_random_seed)
-
 # start simulation
-sim.start()
+output = sim.start()
+
+# print
+print("Simulation seed:", output.current_random_seed)
 
 # get results
-stats = sim.get_actor("Stats")
+stats = output.get_actor("Stats")
 print(stats)
 # stats.write(paths.output_ref / 'test010_confine_stats.txt')
 

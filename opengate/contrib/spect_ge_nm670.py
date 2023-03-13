@@ -1,6 +1,5 @@
 import opengate as gate
 import pathlib
-from box import Box
 
 # unit
 cm = gate.g4_units("cm")
@@ -16,13 +15,38 @@ yellow = [1, 1, 0, 1]
 green = [0, 1, 0, 1]
 
 
+def get_collimator(rad):
+    radionuclides = ["Tc99m", "Lu177", "In111", "I131"]
+    ref_collimators = ["lehr", "megp", "megp", "hegp"]
+    if rad not in radionuclides:
+        gate.fatal(f'The radionuclide "{rad}" is unknown. Known are: {radionuclides}')
+    return ref_collimators[radionuclides.index(rad)]
+
+
+def add_ge_nm67_fake_spect_head(sim, name="spect"):
+    spect_length = 19 * cm
+    head = sim.add_volume("Box", name)
+    head.material = "G4_AIR"
+    head.size = [57.6 * cm, 44.6 * cm, spect_length]
+    head.color = white
+    return head
+
+
+def get_orientation_for_CT(colli_type, table_shift, radius):
+    nm = gate.g4_units("nm")
+    pos, crystal_distance, psdd = get_plane_position_and_distance_to_crystal(colli_type)
+    pos += 1 * nm
+    p = [0, table_shift, -(radius + psdd)]
+    return gate.get_transform_orbiting(p, "x", 90)
+
+
 def add_ge_nm67_spect_head(sim, name="spect", collimator_type="lehr", debug=False):
     """
-    Collimator can be :
+    Collimators:
     - False : no collimator
     - lehr : holes length 35 mm, diam 1.5 mm, septal thickness : 0.2 mm
-    - megp : holes length 58 mm, diam 3 mm, septal thickness : 1.05 mm
-    - hegp : TODO
+    - megp : holes length 58 mm, diam 3 mm,   septal thickness : 1.05 mm
+    - hegp : holes length 66 mm, diam 4 mm,   septal thickness : 1.8 mm
 
     Collimator LEHR: Low Energy High Resolution    (for Tc99m)
     Collimator MEGP: Medium Energy General Purpose (for In111, Lu177)
@@ -31,7 +55,7 @@ def add_ge_nm67_spect_head(sim, name="spect", collimator_type="lehr", debug=Fals
     """
     f = pathlib.Path(__file__).parent.resolve()
     fdb = f"{f}/spect_ge_nm670_materials.db"
-    if fdb not in sim.volume_manager.material_databases:
+    if fdb not in sim.volume_manager.material_database.filenames:
         sim.add_material_database(fdb)
 
     # check overlap
@@ -47,7 +71,7 @@ def add_ge_nm67_spect_head(sim, name="spect", collimator_type="lehr", debug=Fals
     if collimator_type:
         colli = add_ge_nm670_spect_collimator(sim, name, head, collimator_type, debug)
 
-    return head
+    return head, crystal
 
 
 def distance_to_center_of_crystal(sim, name="spect"):
@@ -60,12 +84,8 @@ def distance_to_center_of_crystal(sim, name="spect"):
 
 
 def add_ge_nm670_spect_box(sim, name, collimator_type):
-    # the total length depends on the collimator type ?
+    # the total length
     spect_length = 19 * cm
-    if collimator_type == "megp":
-        spect_length = 19 * cm
-    if collimator_type == "lehr":
-        spect_length = 19 * cm
 
     # bounding box
     head = sim.add_volume("Box", name)
@@ -120,7 +140,8 @@ def add_ge_nm670_spect_box(sim, name, collimator_type):
 
 
 def add_ge_nm670_spect_crystal(sim, name, lead_cover):
-    # mono-bloc crystal thickness 3/8 of inch
+    # mono-bloc crystal thickness 3/8 of inch = 0.9525 cm
+    # (if 5/8 inch = 1.5875 ; but probably need to translate elements)
     crystal = sim.add_volume("Box", f"{name}_crystal")
     crystal.mother = lead_cover.name
     crystal.size = [54 * cm, 40 * cm, 0.9525 * cm]
@@ -192,39 +213,65 @@ def add_ge_nm670_spect_collimator(sim, name, head, collimator_type, debug):
     if collimator_type == "megp":
         colli_trd.dz = 6.48 * cm / 2.0
         colli_trd.translation = [0, 0, 5.17 * cm]
-        psd.translation = [0, 0, 3.190 * cm]
+        psd.translation = [0, 0, 3.19 * cm]
         psd_layer.translation = [0, 0, 3.065 * cm]
         alu_cover.translation = [0, 0, -3.215 * cm]
         air_gap.translation = [0, 0, 2.80 * cm]
         core.size = [54.6 * cm, 40.6 * cm, 5.8 * cm]
 
+    if collimator_type == "hegp":
+        colli_trd.dz = 7.28 * cm / 2.0
+        colli_trd.translation = [0, 0, 5.57 * cm]
+        psd.translation = [0, 0, 3.59 * cm]
+        psd_layer.translation = [0, 0, 3.465 * cm]
+        alu_cover.translation = [0, 0, -3.615 * cm]
+        air_gap.translation = [0, 0, 3.2 * cm]
+        core.size = [54.6 * cm, 40.6 * cm, 6.6 * cm]
+
     # repeater for the holes
     holep = False
     if collimator_type == "megp":
-        holep = mepg_collimator_repeater(sim, name, core, debug)
+        holep = megp_collimator_repeater(sim, name, core, debug)
     if collimator_type == "lehr":
         holep = lehr_collimator_repeater(sim, name, core, debug)
+    if collimator_type == "hegp":
+        holep = hegp_collimator_repeater(sim, name, core, debug)
     if not holep:
         gate.fatal(
             f"Error, unknown collimator type {collimator_type}. "
-            f'Use "megp" or "lehr" r "False"'
+            f'Use "megp" or "lehr" or "hegp" or "False"'
         )
 
     return colli_trd
 
 
-def mepg_collimator_repeater(sim, name, core, debug):
+def hegp_collimator_repeater(sim, name, core, debug):
     # one single hole
-    hole = sim.add_volume("Polyhedra", f"{name}_collimator_hole")
-    hole.phi_start = 0 * deg
-    hole.phi_total = 360 * deg
-    hole.num_side = 6
-    hole.num_zplanes = 2
-    h = 5.8 * cm
-    hole.zplane = [-h / 2, h - h / 2]
-    hole.radius_inner = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    r = 0.15 * cm
-    hole.radius_outer = [r] * hole.num_side
+    hole = sim.add_volume("Hexagon", f"{name}_collimator_hole")
+    hole.height = 6.6 * cm
+    hole.radius = 0.2 * cm
+    hole.material = "G4_AIR"
+    hole.mother = core.name
+
+    # parameterised holes
+    size = [54, 70, 1]
+    if debug:
+        size = [10, 10, 1]
+    tr = [10.0459 * mm, 5.8 * mm, 0]
+    holep = gate.build_param_repeater(sim, core.name, hole.name, size, tr)
+
+    # dot it twice, with the following offset
+    holep.offset_nb = 2
+    holep.offset = [5.0229 * mm, 2.9000 * mm, 0]
+
+    return holep
+
+
+def megp_collimator_repeater(sim, name, core, debug):
+    # one single hole
+    hole = sim.add_volume("Hexagon", f"{name}_collimator_hole")
+    hole.height = 5.8 * cm
+    hole.radius = 0.15 * cm
     hole.material = "G4_AIR"
     hole.mother = core.name
 
@@ -235,7 +282,7 @@ def mepg_collimator_repeater(sim, name, core, debug):
     tr = [7.01481 * mm, 4.05 * mm, 0]
     holep = gate.build_param_repeater(sim, core.name, hole.name, size, tr)
 
-    # dot it twice, with the following offset
+    # do it twice, with the following offset
     holep.offset_nb = 2
     holep.offset = [3.50704 * mm, 2.025 * mm, 0]
 
@@ -244,16 +291,9 @@ def mepg_collimator_repeater(sim, name, core, debug):
 
 def lehr_collimator_repeater(sim, name, core, debug):
     # one single hole
-    hole = sim.add_volume("Polyhedra", f"{name}_collimator_hole")
-    hole.phi_start = 0 * deg
-    hole.phi_total = 360 * deg
-    hole.num_side = 6
-    hole.num_zplanes = 2
-    h = 3.5 * cm
-    hole.zplane = [-h / 2, h - h / 2]
-    hole.radius_inner = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    r = 0.075 * cm
-    hole.radius_outer = [r] * hole.num_side
+    hole = sim.add_volume("Hexagon", f"{name}_collimator_hole")
+    hole.height = 3.5 * cm
+    hole.radius = 0.075 * cm
     hole.material = "G4_AIR"
     hole.mother = core.name
 
@@ -264,14 +304,14 @@ def lehr_collimator_repeater(sim, name, core, debug):
     tr = [2.94449 * mm, 1.7 * mm, 0]
     holep = gate.build_param_repeater(sim, core.name, hole.name, size, tr)
 
-    # dot it twice, with the following offset
+    # do it twice, with the following offset
     holep.offset_nb = 2
     holep.offset = [1.47224 * mm, 0.85 * mm, 0]
 
     return holep
 
 
-def UNUSED_mepg_collimator_repeater_parametrised(sim, name, core, debug):
+def UNUSED_megp_collimator_repeater_parametrised(sim, name, core, debug):
     """# because this volume will be parameterised, we need to prevent
     # the creation of the physical volume
     hole.build_physical_volume = False
@@ -330,7 +370,7 @@ def add_digitizer(sim, crystal_volume_name, channels):
     # projection
     proj = sim.add_actor("HitsProjectionActor", f"Projection_{crystal_volume_name}")
     proj.mother = cc.mother
-    proj.input_hits_collections = [x["name"] for x in cc.channels]
+    proj.input_digi_collections = [x["name"] for x in cc.channels]
     # proj.spacing = [4.41806 * mm, 4.41806 * mm]
     proj.spacing = [5 * mm, 5 * mm]
     proj.size = [128, 128]
@@ -339,23 +379,64 @@ def add_digitizer(sim, crystal_volume_name, channels):
 
 
 def add_digitizer_energy_windows(sim, crystal_volume_name, channels):
-    hc = sim.add_actor("HitsCollectionActor", f"Hits_{crystal_volume_name}")
+    # Hits
+    hc = sim.add_actor("DigitizerHitsCollectionActor", f"Hits_{crystal_volume_name}")
     hc.mother = crystal_volume_name
     hc.output = ""  # No output
     hc.attributes = [
         "PostPosition",
         "TotalEnergyDeposit",
-        "PostStepUniqueVolumeID",
+        "PreStepUniqueVolumeID",
         "GlobalTime",
     ]
-    sc = sim.add_actor("HitsAdderActor", f"Singles_{crystal_volume_name}")
+
+    # Singles
+    sc = sim.add_actor("DigitizerAdderActor", f"Singles_{crystal_volume_name}")
     sc.mother = hc.mother
-    sc.input_hits_collection = hc.name
+    sc.input_digi_collection = hc.name
     sc.policy = "EnergyWinnerPosition"
     sc.output = ""  # No output
-    cc = sim.add_actor("HitsEnergyWindowsActor", f"EnergyWindows_{crystal_volume_name}")
+
+    # energy windows
+    cc = sim.add_actor(
+        "DigitizerEnergyWindowsActor", f"EnergyWindows_{crystal_volume_name}"
+    )
     cc.mother = sc.mother
-    cc.input_hits_collection = sc.name
+    cc.input_digi_collection = sc.name
     cc.channels = channels
     cc.output = ""  # No output
     return cc
+
+
+def get_volume_position_in_head(sim, spect_name, vol_name, pos="max"):
+    vol = sim.get_volume_user_info(f"{spect_name}_{vol_name}")
+    pMin, pMax = gate.get_volume_bounding_limits(sim, vol.name)
+    x = pMax
+    if pos == "min":
+        x = pMin
+    if pos == "center":
+        x = pMin + (pMax - pMin) / 2.0
+    x = gate.vec_g4_as_np(x)
+    x = gate.translate_point_to_volume(sim, vol, spect_name, x)
+    return x[2]
+
+
+def get_plane_position_and_distance_to_crystal(collimator_type):
+    """
+    This has been computed with t043_distances
+    - first : distance from head center to the PSD (translation for the plane)
+    - second: distance from PSD to center of the crystal
+    - third : distance from the head boundary to the PSD (for spect_radius info)
+    """
+    if collimator_type == "lehr":
+        return 61.1, 47.875, 33.9
+
+    if collimator_type == "megp":
+        return 84.1, 70.875, 10.9
+
+    if collimator_type == "hegp":
+        return 92.1, 78.875, 2.9
+
+    gate.fatal(
+        f'Unknown collimator type "{collimator_type}", please use lehr or megp or hegp'
+    )

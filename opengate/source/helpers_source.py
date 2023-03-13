@@ -1,6 +1,7 @@
 from .VoxelsSource import *
 from .GANSource import *
-from .PBSource import *
+from .GANPairsSource import *
+from .PencilBeamSource import *
 import pathlib
 
 """
@@ -9,7 +10,13 @@ import pathlib
     Energy spectra for beta+ emitters
 """
 
-source_type_names = {GenericSource, VoxelsSource, GANSource, PBSource}
+source_type_names = {
+    GenericSource,
+    VoxelsSource,
+    GANSource,
+    GANPairsSource,
+    PencilBeamSource,
+}
 source_builders = gate.make_builders(source_type_names)
 
 gate_source_path = pathlib.Path(__file__).parent.resolve()
@@ -94,10 +101,87 @@ def generate_isotropic_directions(
     sinphi = np.sin(phi)
     cosphi = np.cos(phi)
 
+    # "direct cosine" method, like in Geant4 (already normalized)
     px = -sintheta * cosphi
     py = -sintheta * sinphi
     pz = -costheta
 
     # concat
     v = np.column_stack((px, py, pz))
+
     return v
+
+
+def get_rad_gamma_energy_spectrum(rad):
+    weights = {}
+    energies = {}
+    MeV = gate.g4_units("MeV")
+    # Tc99m
+    weights["Tc99m"] = [0.885]
+    energies["Tc99m"] = [0.140511 * MeV]
+    # Lu177
+    weights["Lu177"] = [0.001726, 0.0620, 0.000470, 0.1038, 0.002012, 0.00216]
+    energies["Lu177"] = [
+        0.0716418 * MeV,
+        0.1129498 * MeV,
+        0.1367245 * MeV,
+        0.2083662 * MeV,
+        0.2496742 * MeV,
+        0.3213159 * MeV,
+    ]
+
+    # In111
+    weights["In111"] = [0.000015, 0.9061, 0.9412]
+    energies["In111"] = [0.15081 * MeV, 0.17128 * MeV, 0.24535 * MeV]
+    # I131
+    weights["I131"] = [
+        0.02607,
+        0.000051,
+        0.000211,
+        0.00277,
+        0.000023,
+        0.000581,
+        0.0614,
+        0.000012,
+        0.000046,
+        0.000807,
+        0.000244,
+        0.00274,
+        0.00017,
+        0.812,
+        0.000552,
+        0.003540,
+        0.0712,
+        0.002183,
+        0.01786,
+    ]
+    energies["I131"] = [
+        0.080185 * MeV,
+        0.0859 * MeV,
+        0.163930 * MeV,
+        0.177214 * MeV,
+        0.23218 * MeV,
+        0.272498 * MeV,
+        0.284305 * MeV,
+        0.2958 * MeV,
+        0.3024 * MeV,
+        0.318088 * MeV,
+        0.324651 * MeV,
+        0.325789 * MeV,
+        0.3584 * MeV,
+        0.364489 * MeV,
+        0.404814 * MeV,
+        0.503004 * MeV,
+        0.636989 * MeV,
+        0.642719 * MeV,
+        0.722911 * MeV,
+    ]
+
+    return weights[rad], energies[rad]
+
+
+def set_source_rad_energy_spectrum(source, rad):
+    w, en = get_rad_gamma_energy_spectrum(rad)
+    source.energy.type = "spectrum_lines"
+    source.energy.spectrum_weight = w
+    source.energy.spectrum_energy = en

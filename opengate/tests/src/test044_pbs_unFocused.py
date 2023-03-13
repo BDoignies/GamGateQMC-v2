@@ -3,12 +3,7 @@
 
 import opengate as gate
 from scipy.spatial.transform import Rotation
-import pathlib
-import os
-import sys
-import inspect
 import os, sys
-import matplotlib.pyplot as plt
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # import ../db.py
@@ -39,7 +34,7 @@ ui = sim.user_info
 ui.g4_verbose = False
 ui.g4_verbose_level = 1
 ui.visu = False
-ui.random_seed = "auto"
+ui.random_seed = 123654789
 ui.random_engine = "MersenneTwister"
 
 # units
@@ -87,12 +82,12 @@ p.physics_list_name = "FTFP_INCLXX_EMZ"
 sim.set_cut("world", "all", 1000 * km)
 
 # default source for tests (from test42)
-source = sim.add_source("PB", "mysource")
+source = sim.add_source("PencilBeamSource", "mysource")
 source.energy.mono = 1440 * MeV
 source.particle = "ion 6 12"  # carbon
 source.position.type = "disc"  # pos = Beam, shape = circle + sigma
 source.position.translation = [0 * mm, 0 * mm, 0 * cm]
-source.position.rotation = Rotation.from_euler("y", 90, degrees=True).as_matrix()
+source.position.rotation = Rotation.from_euler("y", -90, degrees=True).as_matrix()
 # rotate the disc, equiv to : rot1 0 1 0 and rot2 0 0 1
 source.direction.type = "momentum"
 source.direction.momentum = [-1, 0, 0]
@@ -126,8 +121,6 @@ for i in planePositionsV:
 s = sim.add_actor("SimulationStatisticsActor", "Stats")
 s.track_types_flag = True
 
-# create G4 objects
-sim.initialize()
 print(sim.dump_sources())
 
 # create output dir, if it doesn't exist
@@ -135,14 +128,14 @@ if not os.path.isdir(output_path):
     os.mkdir(output_path)
 
 # start simulation
-sim.start()
+output = sim.start()
 
 # print results at the end
-stat = sim.get_actor("Stats")
+stat = output.get_actor("Stats")
 print(stat)
 
 print("Start to analyze data")
-override = True
+override = False
 if (not os.path.exists(ref_path / "sigma_values.txt")) or override:
     sigmasRef, musRef = gate.write_gauss_param_to_file(
         ref_path,
@@ -151,7 +144,7 @@ if (not os.path.exists(ref_path / "sigma_values.txt")) or override:
         fNamePrefix="plane",
         fNameSuffix="a_Carbon_1440MeV_sourceShapePBS-Edep.mhd",
     )
-override = True
+override = False
 if (not os.path.exists(output_path / "sigma_values.txt")) or override:
     sigmasGam, musGam = gate.write_gauss_param_to_file(
         output_path,
@@ -179,8 +172,8 @@ for i in planePositionsV:
     mhd_ref = "plane" + str(i) + "a_" + folder + "-Edep.mhd"
     is_ok = (
         gate.assert_images(
-            output_path / mhd_gate,
             ref_path / mhd_ref,
+            output_path / mhd_gate,
             stat,
             tolerance=50,
             ignore_value=0,

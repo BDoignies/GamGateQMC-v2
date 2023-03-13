@@ -19,13 +19,23 @@ class SimulationUserInfo:
         self.running_verbose_level = 0
 
         # Geant4 verbose
+        # For an unknown reason, when verbose_level == 0, there are some
+        # additional print after the G4RunManager destructor. So we default at 1
         self.g4_verbose_level = 1
         self.g4_verbose = False
 
-        # visualisation (qt)
+        # visualisation (qt|vrml)
         self.visu = False
+        self.visu_type = "qt"  # choice: "qt", "vrml" or "gdml"
+        self.visu_filename = "visu.wrl"
         self.visu_verbose = False
         self.visu_commands = gate.read_mac_file_to_commands("default_visu_commands.mac")
+        self.visu_commands_vrml = gate.read_mac_file_to_commands(
+            "default_visu_commands_vrml.mac"
+        )
+        self.visu_commands_gdml = gate.read_mac_file_to_commands(
+            "default_visu_commands_gdml.mac"
+        )
 
         # check volume overlap once constructed
         self.check_volumes_overlap = True
@@ -57,10 +67,6 @@ class SimulationUserInfo:
         pass
 
     def __str__(self):
-        if self.simulation.is_initialized:
-            a = self.simulation.actual_random_seed
-        else:
-            a = ""
         if self.number_of_threads == 1 and not self.force_multithread_mode:
             g = g4.GateInfo.get_G4MULTITHREADED()
             t = "no"
@@ -71,12 +77,13 @@ class SimulationUserInfo:
         else:
             t = f"{self.number_of_threads} threads"
         s = (
-            f"Verbose        : {self.verbose_level}\n"
-            f"Running verbose: {self.running_verbose_level}\n"
-            f"Geant4 verbose : {self.g4_verbose}, level = {self.g4_verbose_level}\n"
-            f"Visualisation  : {self.visu}, verbose level = {self.g4_verbose_level}\n"
-            f"Check overlap  : {self.check_volumes_overlap}\n"
-            f"Multithreading : {t}\n"
-            f"Random engine  : {self.random_engine}, seed = {self.random_seed} {a}"
+            f"Verbose         : {self.verbose_level}\n"
+            f"Running verbose : {self.running_verbose_level}\n"
+            f"Geant4 verbose  : {self.g4_verbose}, level = {self.g4_verbose_level}\n"
+            f"Visualisation   : {self.visu}, verbose level = {self.g4_verbose_level}\n"
+            f"Visutype        : {self.visu_type}\n"
+            f"Check overlap   : {self.check_volumes_overlap}\n"
+            f"Multithreading  : {t}\n"
+            f"Random engine   : {self.random_engine}, seed = {self.random_seed}"
         )
         return s

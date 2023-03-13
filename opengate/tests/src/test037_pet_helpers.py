@@ -2,12 +2,11 @@
 # -*- coding: utf-8 -*-
 
 import opengate as gate
-import opengate.contrib.pet_vereos as pet_vereos
+import opengate.contrib.pet_philips_vereos as pet_vereos
 import opengate.contrib.phantom_necr as phantom_necr
 
 
-def make_simu(sim=None, output_path):
-
+def make_simu(sim=None, output_path="./"):
     # create the simulation
     if sim is None:
         sim = gate.Simulation()
@@ -62,7 +61,7 @@ def make_simu(sim=None, output_path):
     s.track_types_flag = True
 
     # hits collection
-    hc = sim.add_actor("HitsCollectionActor", "Hits")
+    hc = sim.add_actor("DigitizerHitsCollectionActor", "Hits")
     # get crystal volume by looking for the word crystal in the name
     l = sim.get_all_volumes_user_info()
     crystal = l[[k for k in l if "crystal" in k][0]]
@@ -73,17 +72,17 @@ def make_simu(sim=None, output_path):
         "PostPosition",
         "TotalEnergyDeposit",
         "TrackVolumeCopyNo",
-        "PreStepUniqueVolumeID",
         "PostStepUniqueVolumeID",
+        "PreStepUniqueVolumeID",
         "GlobalTime",
         # "KineticEnergy", # not needed
         # "ProcessDefinedStep", # not needed
     ]
 
     # singles collection
-    sc = sim.add_actor("HitsAdderActor", "Singles")
+    sc = sim.add_actor("DigitizerAdderActor", "Singles")
     sc.mother = crystal.name
-    sc.input_hits_collection = "Hits"
+    sc.input_digi_collection = "Hits"
     # sc.policy = "EnergyWinnerPosition"
     sc.policy = "EnergyWeightedCentroidPosition"
     # the following attributes is not needed in singles

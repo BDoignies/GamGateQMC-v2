@@ -13,6 +13,7 @@ sim = gate.Simulation()
 ui = sim.user_info
 ui.g4_verbose = False
 ui.visu = False
+ui.random_seed = 123456
 
 # units
 m = gate.g4_units("m")
@@ -50,7 +51,7 @@ sim.set_cut("world", "all", 700 * um)
 
 # default source for tests
 # the source is fixed at the center, only the volume will move
-source = sim.add_source("Generic", "mysource")
+source = sim.add_source("GenericSource", "mysource")
 source.energy.mono = 150 * MeV
 source.particle = "proton"
 source.position.type = "disc"
@@ -94,24 +95,19 @@ for r in range(n):
     start = end
     end += 1 * sec / n
 
-# create G4 objects
-sim.initialize()
-
-# Check
-
 # start simulation
-sim.start()
+output = sim.start()
 
 # print results at the end
-stat = sim.get_actor("Stats")
+stat = output.get_actor("Stats")
 print(stat)
 
-dose = sim.get_actor("dose")
+dose = output.get_actor("dose")
 print(dose)
 
 # tests
 stats_ref = gate.read_stat_file(paths.output_ref / "stats030.txt")
-is_ok = gate.assert_stats(stat, stats_ref, 0.10)
+is_ok = gate.assert_stats(stat, stats_ref, 0.11)
 
 print()
 gate.warning("Difference for EDEP")

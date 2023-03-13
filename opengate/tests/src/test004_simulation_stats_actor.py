@@ -32,7 +32,7 @@ waterbox.material = "G4_WATER"
 keV = gate.g4_units("keV")
 mm = gate.g4_units("mm")
 Bq = gate.g4_units("Bq")
-source = sim.add_source("Generic", "Default")
+source = sim.add_source("GenericSource", "Default")
 source.particle = "gamma"
 source.energy.mono = 80 * keV
 source.direction.type = "momentum"
@@ -53,24 +53,13 @@ print("Volume types :", sim.dump_volume_types())
 print("Source types :", sim.dump_source_types())
 print("Actor types  :", sim.dump_actor_types())
 
-# create G4 objects
-sim.initialize()
-
-# print after init
-print(sim)
-print("Simulation seed:", sim.actual_random_seed)
-
-# verbose
-# sim.g4_apply_command('/tracking/verbose 0')
-# sim.g4_com("/run/verbose 2")
-# sim.g4_com("/event/verbose 2")
-# sim.g4_com("/tracking/verbose 1")
+print("Tree of volumes: ", sim.dump_tree_of_volumes())
 
 # start simulation
-sim.start()
+output = sim.start()
 print(sim.dump_sources())
 
-stats = sim.get_actor("Stats")
+stats = output.get_actor("Stats")
 print(stats)
 
 # gate_test4_simulation_stats_actor

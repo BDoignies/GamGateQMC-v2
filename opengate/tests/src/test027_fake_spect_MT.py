@@ -77,7 +77,7 @@ cuts.world.positron = 1 * mm
 cuts.world.proton = 1 * mm
 
 # default source for tests
-source = sim.add_source("Generic", "Default")
+source = sim.add_source("GenericSource", "Default")
 source.particle = "gamma"
 source.energy.mono = 140.5 * keV
 source.position.type = "sphere"
@@ -91,7 +91,7 @@ source.activity = 5000 * Bq / ui.number_of_threads
 sim.add_actor("SimulationStatisticsActor", "Stats")
 
 # hits collection
-hc = sim.add_actor("HitsCollectionActor", "Hits")
+hc = sim.add_actor("DigitizerHitsCollectionActor", "Hits")
 hc.mother = crystal.name
 hc.output = paths.output / "test027.root"
 hc.attributes = [
@@ -102,16 +102,16 @@ hc.attributes = [
     "GlobalTime",
     "TrackVolumeName",
     "TrackID",
-    "PreStepUniqueVolumeID",
     "PostStepUniqueVolumeID",
+    "PreStepUniqueVolumeID",
     "TrackVolumeCopyNo",
     "TrackVolumeInstanceID",
 ]
 
 # singles collection
-sc = sim.add_actor("HitsAdderActor", "Singles")
+sc = sim.add_actor("DigitizerAdderActor", "Singles")
 sc.mother = crystal.name
-sc.input_hits_collection = "Hits"
+sc.input_digi_collection = "Hits"
 sc.policy = "EnergyWinnerPosition"
 # sc.policy = 'EnergyWeightedCentroidPosition'
 # same filename, there will be two branches in the file
@@ -125,15 +125,12 @@ sim.run_timing_intervals = [
     [0.66 * sec, 1 * sec],
 ]
 
-# create G4 objects
-sim.initialize()
-
 # start simulation
-sim.start()
+output = sim.start()
 
 # stat
 gate.warning("Compare stats")
-stats = sim.get_actor("Stats")
+stats = output.get_actor("Stats")
 print(stats)
 print(f"Number of runs was {stats.counts.run_count}. Set to 1 before comparison")
 stats.counts.run_count = 1  # force to 1

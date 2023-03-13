@@ -2,7 +2,8 @@ import itk
 import numpy as np
 import os
 import opengate as gate
-import matplotlib.pyplot as plt
+import random
+import string
 import colored
 from box import Box, BoxList
 import scipy
@@ -12,8 +13,6 @@ import gatetools.phsp as phsp
 import pathlib
 import uproot
 import sys
-
-
 import matplotlib.pyplot as plt
 
 
@@ -36,15 +35,16 @@ def delete_run_manager_if_needed(sim):
     gate.warning(
         "WARNING, we need to delete G4RunManager, otherwise, GIL bug (seg fault)"
     )
-    if sim.g4_RunManager:
-        del sim.g4_RunManager
+    if "g4_RunManager" in sim.__dict__:
+        sim.g4_RunManager = None
     print("RunManager deleted.")
 
 
 def read_stat_file(filename):
     p = os.path.abspath(filename)
     f = open(p, "r")
-    a = gate.UserInfo("Actor", "SimulationStatisticsActor", filename)
+    r = "".join(random.choices(string.ascii_lowercase + string.digits, k=20))
+    a = gate.UserInfo("Actor", "SimulationStatisticsActor", r)
     stat = gate.SimulationStatisticsActor(a)
     # stat.counts = Box()
     read_track = False
@@ -117,23 +117,24 @@ def assert_stats(stat1, stat2, tolerance=0, is_ok=True):
 
     b = abs(event_d) <= tolerance * 100
     is_ok = b and is_ok
+    st = f"(tol = {tolerance * 100:.2f} %)"
     print_test(
         b,
-        f"Events:       {stat1.counts.event_count} {stat2.counts.event_count} : {event_d:+.2f} %",
+        f"Events:       {stat1.counts.event_count} {stat2.counts.event_count} : {event_d:+.2f} %  {st}",
     )
 
     b = abs(track_d) <= tolerance * 100
     is_ok = b and is_ok
     print_test(
         b,
-        f"Tracks:       {stat1.counts.track_count} {stat2.counts.track_count} : {track_d:+.2f} %",
+        f"Tracks:       {stat1.counts.track_count} {stat2.counts.track_count} : {track_d:+.2f} %  {st}",
     )
 
     b = abs(step_d) <= tolerance * 100
     is_ok = b and is_ok
     print_test(
         b,
-        f"Steps:        {stat1.counts.step_count} {stat2.counts.step_count} : {step_d:+.2f} %",
+        f"Steps:        {stat1.counts.step_count} {stat2.counts.step_count} : {step_d:+.2f} %  {st}",
     )
 
     print_test(
@@ -174,7 +175,7 @@ def assert_stats(stat1, stat2, tolerance=0, is_ok=True):
     if stat1.user_info.track_types_flag:
         n = 0
         for t in stat1.counts.track_types.values():
-            n += t
+            n += int(t)
         b = n == stat1.counts.track_count
         print_test(b, f"Tracks      : {stat1.counts.track_types}")
         if "track_types" in stat2.counts:
@@ -223,17 +224,7 @@ def plot_img_x(ax, img, label):
     ax.legend()
 
 
-def assert_images(
-    ref_filename1, filename2, stats=None, tolerance=0, ignore_value=0, axis="z"
-):
-    # read image and info (size, spacing etc)
-    ref_filename1 = gate.check_filename_type(ref_filename1)
-    filename2 = gate.check_filename_type(filename2)
-    img1 = itk.imread(ref_filename1)
-    img2 = itk.imread(filename2)
-    info1 = gate.get_info_from_image(img1)
-    info2 = gate.get_info_from_image(img2)
-
+def assert_images_properties(info1, info2):
     # check img info
     is_ok = True
     if not np.all(info1.size == info2.size):
@@ -250,16 +241,52 @@ def assert_images(
         is_ok = False
     print_test(is_ok, f"Images with same size/spacing/origin/dir ? {is_ok}")
 
+    print(f"Image1: {info1.size} {info1.spacing} {info1.origin} ")
+    print(f"Image2: {info2.size} {info2.spacing} {info2.origin} ")
+
+    return is_ok
+
+
+def assert_images(
+    ref_filename1,
+    filename2,
+    stats=None,
+    tolerance=0,
+    ignore_value=0,
+    axis="z",
+    fig_name=None,
+    sum_tolerance=5,
+    scaleImageValuesFactor=None,
+):
+    # read image and info (size, spacing etc)
+    ref_filename1 = gate.check_filename_type(ref_filename1)
+    filename2 = gate.check_filename_type(filename2)
+    img1 = itk.imread(ref_filename1)
+    img2 = itk.imread(filename2)
+    info1 = gate.get_info_from_image(img1)
+    info2 = gate.get_info_from_image(img2)
+
+    is_ok = assert_images_properties(info1, info2)
+
     # check pixels contents, global stats
     data1 = itk.GetArrayViewFromImage(img1).ravel()
     data2 = itk.GetArrayViewFromImage(img2).ravel()
 
-    print(
-        f"Image1: {info1.size} {info1.spacing} {info1.origin} sum={np.sum(data1):.2f} {ref_filename1}"
-    )
-    print(
-        f"Image2: {info2.size} {info2.spacing} {info2.origin} sum={np.sum(data2):.2f} {filename2}"
-    )
+    if scaleImageValuesFactor:
+        data2 *= scaleImageValuesFactor
+
+    s1 = np.sum(data1)
+    s2 = np.sum(data2)
+    if s1 == 0 and s2 == 0:
+        t = 0
+    else:
+        t = np.fabs((s1 - s2) / s1) * 100
+    b = t < sum_tolerance
+    print_test(b, f"Img sums {s1} vs {s2} : {t:.2f} %  (tol {sum_tolerance:.2f} %)")
+    is_ok = is_ok and b
+
+    print(f"Image1: {info1.size} {info1.spacing} {info1.origin} {ref_filename1}")
+    print(f"Image2: {info2.size} {info2.spacing} {info2.origin} {filename2}")
 
     # do not consider pixels with a value of zero (data2 is the reference)
     d1 = data1[data2 != ignore_value]
@@ -289,7 +316,123 @@ def assert_images(
     fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(25, 10))
     plot_img_axis(ax, img1, "reference", axis)
     plot_img_axis(ax, img2, "test", axis)
-    n = filename2.replace(".mhd", "_test.png")
+    if fig_name is None:
+        n = filename2.replace(".mhd", "_test.png")
+    else:
+        n = fig_name
+    print("Save image test figure :", n)
+    plt.savefig(n)
+
+    return is_ok
+
+
+def plot_hist(ax, data, label, bins=100):
+    ax.hist(
+        data,
+        bins=bins,
+        density=True,
+        histtype="stepfilled",
+        alpha=0.8,
+        label=label,
+    )
+    ax.set_ylabel("Counts")
+    ax.legend()
+
+
+def plot_profile(ax, y, y_spacing=1, label=""):
+    x = np.arange(len(y)) * y_spacing
+    ax.plot(x, y, label=label)
+    ax.legend()
+
+
+def assert_filtered_imagesprofile1D(
+    ref_filter_filename1,
+    ref_filename1,
+    filename2,
+    stats=None,
+    tolerance=0,
+    ignore_value=0,
+    fig_name=None,
+    sum_tolerance=5,
+    plt_ylim=None,
+):
+    # read image and info (size, spacing etc)
+    ref_filter_filename1 = gate.check_filename_type(ref_filter_filename1)
+    ref_filename1 = gate.check_filename_type(ref_filename1)
+    filename2 = gate.check_filename_type(filename2)
+    filter_img1 = itk.imread(ref_filter_filename1)
+    img1 = itk.imread(ref_filename1)
+    img2 = itk.imread(filename2)
+    info1 = gate.get_info_from_image(img1)
+    info2 = gate.get_info_from_image(img2)
+
+    is_ok = assert_images_properties(info1, info2)
+
+    # check pixels contents, global stats
+
+    filter_data = np.squeeze(itk.GetArrayViewFromImage(filter_img1).ravel())
+    data1 = np.squeeze(itk.GetArrayViewFromImage(img1).ravel())
+    data2 = np.squeeze(itk.GetArrayViewFromImage(img2).ravel())
+    flipflag = True
+    if flipflag:
+        filter_data = np.flip(filter_data)
+        data1 = np.flip(data1)
+        data2 = np.flip(data2)
+    max_ind = np.argmax(filter_data)
+    L_filter = range(max_ind)
+    d1 = data1[L_filter]
+    d2 = data2[L_filter]
+
+    s1 = np.sum(d1)
+    s2 = np.sum(d2)
+    print(
+        f"Evaluate only data from entry up to peak position of reference filter image"
+    )
+    print(f"Going to evaluate {d1.size} elements out of {data1.size}")
+    t = np.fabs((s1 - s2) / s1) * 100
+    b = t < sum_tolerance
+    print_test(b, f"Img sums {s1} vs {s2} : {t:.2f} %  (tol {sum_tolerance:.2f} %)")
+
+    # do not consider pixels with a value of zero (data2 is the reference)
+    # d1 = data1[data2 != ignore_value]
+    # d2 = data2[data2 != ignore_value]
+
+    # normalise by event
+    if stats is not None:
+        d1 = d1 / stats.counts.event_count
+        d2 = d2 / stats.counts.event_count
+
+    # normalize by sum of d1
+    s = np.sum(d2)
+    d1 = d1 / s
+    d2 = d2 / s
+
+    # sum of absolute difference (in %)
+    sad = np.fabs(d1 - d2).sum() * 100
+    is_ok = is_ok and sad < tolerance
+    print_test(
+        is_ok,
+        f"Image diff computed on {len(data2 != 0)}/{len(data2.ravel())} \n"
+        f"SAD (per event/total): {sad:.2f} % "
+        f" (tolerance is {tolerance :.2f} %)",
+    )
+    filter_data_norm_au = filter_data / np.amax(filter_data) * np.amax(data1) * 0.7
+    # plot
+    fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(25, 10))
+
+    plot_profile(ax, filter_data_norm_au, info1.spacing[0], "filter")
+    plot_profile(ax, data1, info1.spacing[0], "reference")
+    plot_profile(ax, data2, info2.spacing[0], "test")
+    ax.plot(max_ind * info1.spacing[0], filter_data_norm_au[max_ind], "o", label="p")
+
+    if plt_ylim:
+        ax.set_ylim(plt_ylim)
+    # plt.show()
+
+    if fig_name is None:
+        n = filename2.replace(".mhd", "_test.png")
+    else:
+        n = fig_name
     print("Save image test figure :", n)
     plt.savefig(n)
 
@@ -326,7 +469,7 @@ def get_new_key_name(key):
         ["energy", "TotalEnergyDeposit", 1, 0.001],
         ["Ekine", "KineticEnergy", 1, 0.001],
         ["time", "GlobalTime", 1e-9, 0.02],
-        ["posX", "PostPosition_X", 1, 0.9],
+        ["posX", "PostPosition_X", 1, 1],
         ["posY", "PostPosition_Y", 1, 0.9],
         ["posZ", "PostPosition_Z", 1, 0.7],
         ["globalPosX", "PostPosition_X", 1, 0.7],
@@ -363,7 +506,7 @@ def get_keys_correspondence(keys):
 
 
 def rel_diff(a, b):
-    return np.divide(np.fabs(a - b), a, out=np.zeros_like(a), where=a != 0) * 100
+    return np.divide(a - b, a, out=np.zeros_like(a), where=a != 0) * 100
 
 
 def rel_diff_range(a, b):
@@ -414,7 +557,17 @@ Previous trial with Two-sample Kolmogorov-Smirnov test
 
 
 def compare_branches(
-    tree1, keys1, tree2, keys2, key1, key2, tol=0.8, scaling1=1, scaling2=1, ax=False
+    tree1,
+    keys1,
+    tree2,
+    keys2,
+    key1,
+    key2,
+    tol=0.8,
+    scaling1=1,
+    scaling2=1,
+    ax=False,
+    nb_bins=200,
 ):
     """
     Compare with Wasserstein distance
@@ -423,6 +576,16 @@ def compare_branches(
     # get branches
     b1 = get_branch(tree1, keys1, key1) * scaling1
     b2 = get_branch(tree2, keys2, key2) * scaling2
+    is_ok = compare_branches_values(b1, b2, key1, key2, tol, ax, nb_bins)
+    return is_ok
+
+
+def compare_branches_values(b1, b2, key1, key2, tol=0.8, ax=False, nb_bins=200):
+    """
+    Compare with Wasserstein distance
+    Works well, but not easy to set the tolerance value.
+    """
+
     # get ranges
     brange1 = np.max(b1) - np.min(b1)
     brange2 = np.max(b2) - np.min(b2)
@@ -431,6 +594,9 @@ def compare_branches(
     m2 = np.mean(b2)
     n1 = np.size(b1)
     n2 = np.size(b2)
+    # sum
+    sum1 = np.sum(b1)
+    sum2 = np.sum(b2)
 
     # Earth mover distance (Wasserstein)
     wass = stats.wasserstein_distance(b1, b2)
@@ -439,13 +605,13 @@ def compare_branches(
     if not ok:
         oks = "fail"
     s = (
-        f"N: {n1:7} vs {n2:7} -> means {m1:6.2f} vs {m2:6.2f} -> ranges: {brange1:6.2f} vs {brange2:6.2f} "
+        f"N: {n1:7} vs {n2:7} -> means {m1:6.2f} vs {m2:6.2f} -> sums {sum1:6.2f} vs {sum2:6.2f}  -> ranges: {brange1:6.2f} vs {brange2:6.2f} "
         f" -> w:{wass:4.3f} vs {tol:4.3f}  \t {key1:<20} {key2:<20}  -> {oks} (tol {tol})"
     )
     print_test(ok, s)
     # figure ?
     if ax:
-        nb_bins = 200
+        nb_bins = nb_bins
         label = f" {key1} $\mu$={m1:.2f}"
         ax.hist(
             b1, nb_bins, density=True, histtype="stepfilled", alpha=0.5, label=label
@@ -470,6 +636,7 @@ def compare_trees(
     scalings1,
     scalings2,
     fig=False,
+    nb_bins=200,
 ):
     if fig:
         nb_fig = len(keys1)
@@ -484,21 +651,20 @@ def compare_trees(
             n += 1
         else:
             a = False
-        is_ok = (
-            compare_branches(
-                tree1,
-                allkeys1,
-                tree2,
-                allkeys2,
-                keys1[i],
-                keys2[i],
-                tols[i],
-                scalings1[i],
-                scalings2[i],
-                a,
-            )
-            and is_ok
+        ia = compare_branches(
+            tree1,
+            allkeys1,
+            tree2,
+            allkeys2,
+            keys1[i],
+            keys2[i],
+            tols[i],
+            scalings1[i],
+            scalings2[i],
+            a,
+            nb_bins=nb_bins,
         )
+        is_ok = ia and is_ok
     if fig:
         phsp.fig_rm_empty_plot(nb_fig, n, ax)
     return is_ok
@@ -518,10 +684,14 @@ def get_default_test_paths(f, gate_folder=None):
 
 
 def compare_root2(root1, root2, branch1, branch2, keys, img_filename, n_tol=3):
+    if not os.path.isfile(root1):
+        gate.fatal(f"Cannot open root file '{root1}'")
     hits1 = uproot.open(root1)[branch1]
     hits1_n = hits1.num_entries
     hits1 = hits1.arrays(library="numpy")
 
+    if not os.path.isfile(root2):
+        gate.fatal(f"Cannot open root file '{root2}'")
     hits2 = uproot.open(root2)[branch2]
     hits2_n = hits2.num_entries
     hits2 = hits2.arrays(library="numpy")
@@ -530,7 +700,8 @@ def compare_root2(root1, root2, branch1, branch2, keys, img_filename, n_tol=3):
     print(f"Current tree:   {os.path.basename(root2)} n={hits2_n}")
     diff = gate.rel_diff(float(hits1_n), float(hits2_n))
     is_ok = gate.print_test(
-        diff < n_tol, f"Difference: {hits1_n} {hits2_n} {diff:.2f}% (tol = {n_tol:.2f})"
+        np.fabs(diff) < n_tol,
+        f"Difference: {hits1_n} {hits2_n} {diff:.2f}% (tol = {n_tol:.2f})",
     )
     print(f"Reference tree: {hits1.keys()}")
     print(f"Current tree:   {hits2.keys()}")
@@ -579,7 +750,9 @@ def compare_root(root1, root2, branch1, branch2, checked_keys, img):
     print(f"Reference tree: {os.path.basename(root1)} n={hits1_n}")
     print(f"Current tree:   {os.path.basename(root2)} n={hits2_n}")
     diff = gate.rel_diff(float(hits1_n), float(hits2_n))
-    is_ok = gate.print_test(diff < 6, f"Difference: {hits1_n} {hits2_n} {diff:.2f}%")
+    is_ok = gate.print_test(
+        np.fabs(diff) < 6, f"Difference: {hits1_n} {hits2_n} {diff:.2f}%"
+    )
     print(f"Reference tree: {hits1.keys()}")
     print(f"Current tree:   {hits2.keys()}")
 
@@ -623,6 +796,7 @@ def compare_root3(
     scalings2,
     img,
     hits_tol=6,
+    nb_bins=200,
 ):
     hits1 = uproot.open(root1)[branch1]
     hits1_n = hits1.num_entries
@@ -635,9 +809,8 @@ def compare_root3(
     print(f"Reference tree: {os.path.basename(root1)} n={hits1_n}")
     print(f"Current tree:   {os.path.basename(root2)} n={hits2_n}")
     diff = gate.rel_diff(float(hits1_n), float(hits2_n))
-    is_ok = gate.print_test(
-        diff < hits_tol, f"Difference: {hits1_n} {hits2_n} {diff:.2f}%"
-    )
+    b = np.fabs(diff) < hits_tol
+    is_ok = gate.print_test(b, f"Difference: {hits1_n} {hits2_n} {diff:.2f}%")
     print(f"Reference tree: {hits1.keys()}")
     print(f"Current tree:   {hits2.keys()}")
 
@@ -654,6 +827,7 @@ def compare_root3(
             scalings1,
             scalings2,
             True,
+            nb_bins=nb_bins,
         )
         and is_ok
     )
@@ -667,6 +841,13 @@ def compare_root3(
     print(f"Figure in {img}")
 
     return is_ok
+
+
+def open_root_as_np(root_file, tree_name):
+    a = uproot.open(root_file)[tree_name]
+    n = a.num_entries
+    a = a.arrays(library="numpy")
+    return a, n
 
 
 # https://stackoverflow.com/questions/4527942/comparing-two-dictionaries-and-checking-how-many-key-value-pairs-are-equal
@@ -685,7 +866,6 @@ def dict_compare(d1, d2):
 def write_gauss_param_to_file(
     outputdir, planePositionsV, saveFig=False, fNamePrefix="plane", fNameSuffix="a.mhd"
 ):
-
     # create output dir, if it doesn't exist
     if not os.path.isdir(outputdir):
         os.mkdir(outputdir)
@@ -698,7 +878,6 @@ def write_gauss_param_to_file(
     sigma_values = []
     mu_values = []
     for i in planePositionsV:
-
         filename = fNamePrefix + str(i) + fNameSuffix
         filepath = outputdir / filename
 
@@ -731,7 +910,6 @@ def write_gauss_param_to_file(
 
 
 def get_gauss_param_xy(data, spacing, shape, filepath=None, saveFig=False):
-
     # Parameters along x
     parameters_x, img_x, _ = extract_gauss_param_1D(
         data, shape[2], spacing[0], axis=1, createFig=saveFig
@@ -757,7 +935,6 @@ def get_gauss_param_xy(data, spacing, shape, filepath=None, saveFig=False):
 
 
 def extract_gauss_param_1D(data, length, spacing, axis=1, createFig=False):
-
     poseVec = create_position_vector(length, spacing)
     dose = np.squeeze(np.sum(data, axis=axis))  # integrate dose along axis
     parameters, fit = gaussian_fit(poseVec, dose)
@@ -770,7 +947,6 @@ def extract_gauss_param_1D(data, length, spacing, axis=1, createFig=False):
 
 
 def plot_gauss_fit(positionVec, dose, fit, show=False):
-
     fig, a = plt.subplots()
     a.plot(positionVec, dose, "o", label="data")
     a.plot(positionVec, fit, "-", label="fit")
@@ -783,7 +959,6 @@ def plot_gauss_fit(positionVec, dose, fit, show=False):
 
 
 def create_position_vector(length, spacing):
-
     # cretae position vector, with origin in the image plane's center
     width = length * spacing
     positionVec = np.arange(0, width, spacing) - width / 2 + spacing / 2
@@ -796,7 +971,6 @@ def Gauss(x, A, x0, sigma):
 
 
 def gaussian_fit(positionVec, dose):
-
     # Fit data with Gaussian func
     mean = sum(positionVec * dose) / sum(dose)
     sigma = np.sqrt(sum(dose * (positionVec - mean) ** 2) / sum(dose))
@@ -809,7 +983,6 @@ def gaussian_fit(positionVec, dose):
 
 
 def read_mhd(filename):
-
     img = itk.imread(str(filename))
     data = itk.GetArrayViewFromImage(img)
     spacing = img.GetSpacing()
@@ -818,7 +991,6 @@ def read_mhd(filename):
 
 
 def create_2D_Edep_colorMap(filepath, show=False):
-
     img = itk.imread(str(filepath))
     data = itk.GetArrayViewFromImage(img)
 
@@ -835,7 +1007,6 @@ def create_2D_Edep_colorMap(filepath, show=False):
 
 
 def compareGaussParamFromFile(sigma, ref, rel_tol=0, abs_tol=0, verb=False):
-
     if rel_tol == 0 and abs_tol == 0:
         print("\033[91m Please provide non-zero tolerance\033[0m")
 
@@ -912,7 +1083,6 @@ def compareGaussParamFromFile(sigma, ref, rel_tol=0, abs_tol=0, verb=False):
 
 
 def compareGaussParamArrays(paramTestV, paramRefV, rel_tol=0, abs_tol=0, verb=False):
-
     if rel_tol == 0 and abs_tol == 0:
         print("\033[91m Please provide non-zero tolerance\033[0m")
 
@@ -982,7 +1152,6 @@ def compareGaussParamArrays(paramTestV, paramRefV, rel_tol=0, abs_tol=0, verb=Fa
 
 
 def test_weights(expected_ratio, mhd_1, mhd_2, thresh=0.1):
-
     img1 = itk.imread(str(mhd_1))
     img2 = itk.imread(str(mhd_2))
     data1 = itk.GetArrayViewFromImage(img1).ravel()
@@ -1004,3 +1173,19 @@ def test_weights(expected_ratio, mhd_1, mhd_2, thresh=0.1):
         print("\033[91m Ratio not as expected \033[0m")
 
     return is_ok
+
+
+def check_diff(value1, value2, tolerance, txt):
+    diff = np.fabs(value1 - value2) / value1 * 100
+    t = diff < tolerance
+    s = f"{txt} {value1:.2f} vs {value2:.2f} -> {diff:.2f}% (tol={tolerance}%)"
+    gate.print_test(t, s)
+    return t
+
+
+def check_diff_abs(value1, value2, tolerance, txt):
+    diff = np.fabs(value1 - value2)
+    t = diff < tolerance
+    s = f"{txt} {value1:.2f} vs {value2:.2f} -> {diff:.2f} (tol={tolerance})"
+    gate.print_test(t, s)
+    return t

@@ -4,9 +4,9 @@
 import opengate as gate
 import opengate.contrib.phantom_nema_iec_body as gate_iec
 import pathlib
-import os
 
 pathFile = pathlib.Path(__file__).parent.resolve()
+
 
 # global log level
 # create the simulation
@@ -17,6 +17,7 @@ ui = sim.user_info
 ui.g4_verbose = False
 ui.g4_verbose_level = 1
 ui.visu = False
+ui.random_seed = 123654987
 
 #  change world size
 m = gate.g4_units("m")
@@ -31,7 +32,7 @@ iec_phantom.translation = [0 * cm, 3.5 * cm, 0 * cm]
 # simple source
 MeV = gate.g4_units("MeV")
 Bq = gate.g4_units("Bq")
-source = sim.add_source("Generic", "g")
+source = sim.add_source("GenericSource", "g")
 source.particle = "gamma"
 source.energy.mono = 0.1 * MeV
 source.direction.type = "iso"
@@ -46,11 +47,10 @@ sec = gate.g4_units("second")
 sim.run_timing_intervals = [[0, 1 * sec]]
 
 # initialize & start
-sim.initialize()
-sim.start()
+output = sim.start()
 
 # print results at the end
-stats = sim.get_actor("stats")
+stats = output.get_actor("stats")
 print(stats)
 stats.write(pathFile / ".." / "output" / "stats_test015_iec_phantom_1.txt")
 

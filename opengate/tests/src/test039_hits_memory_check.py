@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from test039_hits_memory_check_base import *
+from test039_hits_memory_check_helpers import *
 
 paths = gate.get_default_test_paths(__file__, "")
 
@@ -11,9 +11,8 @@ ui = sim.user_info
 ui.random_seed = "auto"
 
 # go
-sim.initialize()
-sim.start()
+output = sim.start()
 
-is_ok = test_results(sim)
+is_ok = test_results(output)
 
 gate.test_ok(is_ok)

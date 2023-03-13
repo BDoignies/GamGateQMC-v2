@@ -1,8 +1,6 @@
-import opengate
 from .GenericSource import *
 import opengate_core as g4
 import itk
-import numpy as np
 
 
 class VoxelsSource(GenericSource):
@@ -11,7 +9,7 @@ class VoxelsSource(GenericSource):
     Sampled with cumulative distribution functions.
     """
 
-    type_name = "Voxels"
+    type_name = "VoxelsSource"
 
     @staticmethod
     def set_default_user_info(user_info):
@@ -32,11 +30,17 @@ class VoxelsSource(GenericSource):
     def __del__(self):
         pass
 
-    def create_g4_source(self):
-        return g4.GateVoxelsSource()
-
     def __init__(self, user_info):
         super().__init__(user_info)
+        self.image = None
+
+    def __getstate__(self):
+        super().__getstate__()
+        self.image = None
+        return self.__dict__
+
+    def create_g4_source(self):
+        return g4.GateVoxelsSource()
 
     def set_transform_from_user_info(self):
         # get source image information

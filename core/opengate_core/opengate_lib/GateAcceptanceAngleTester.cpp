@@ -36,10 +36,12 @@ GateAcceptanceAngleTester::GateAcceptanceAngleTester(
   fNormalVector = StrToG4ThreeVector(param["normal_vector"]);
 }
 
+GateAcceptanceAngleTester::~GateAcceptanceAngleTester() { delete fAARotation; }
+
 void GateAcceptanceAngleTester::UpdateTransform() {
   // Get the transformation
   G4ThreeVector tr;
-  fAARotation = new G4RotationMatrix;
+  fAARotation = new G4RotationMatrix; // FIXME to delete !!!!!!!!!!!
   ComputeTransformationFromWorldToVolume(fAcceptanceAngleVolumeName, tr,
                                          *fAARotation);
   // It is not fully clear why the AffineTransform need the inverse

@@ -31,7 +31,7 @@ def is_rotation_matrix(R):
     # square matrix test
     if R.ndim != 2 or R.shape[0] != R.shape[1]:
         return False
-    should_be_identity = np.allclose(R.dot(R.T), np.identity(R.shape[0], np.float))
+    should_be_identity = np.allclose(R.dot(R.T), np.identity(R.shape[0], np.float_))
     should_be_one = np.allclose(np.linalg.det(R), 1)
     return should_be_identity and should_be_one
 
@@ -197,19 +197,20 @@ def repeat_array_start(name, start, size, translation):
                 start[2] + translation[2] * z,
             ],
         }
-        for x, y, z in np.ndindex((size[0], size[1], size[2]))
+        for x, y, z in np.ndindex(size[0], size[1], size[2])
     ]
     return le
 
 
-def build_param_repeater(sim, mother_name, repeated_vol_name, size, translation):
+def build_param_repeater(
+    sim, mother_name, repeated_vol_name, size, translation, rot=None
+):
     vol = sim.get_volume_user_info(repeated_vol_name)
     vol.build_physical_volume = False
     param = sim.add_volume("RepeatParametrised", f"{repeated_vol_name}_param")
     param.mother = mother_name
     param.repeated_volume_name = repeated_vol_name
-    param.translation = None
-    param.rotation = None
+    param.rotation = rot
     param.linear_repeat = size
     param.translation = translation
     param.start = [-(x - 1) * y / 2.0 for x, y in zip(size, translation)]

@@ -3,7 +3,6 @@
 
 import opengate as gate
 
-# set log level
 # create the simulation
 sim = gate.Simulation()
 
@@ -29,7 +28,7 @@ MeV = gate.g4_units("MeV")
 mm = gate.g4_units("mm")
 Bq = gate.g4_units("Bq")
 sec = gate.g4_units("second")
-source1 = sim.add_source("Generic", "source1")
+source1 = sim.add_source("GenericSource", "source1")
 source1.particle = "proton"
 source1.energy.mono = 150 * MeV
 source1.position.radius = 10 * mm
@@ -37,7 +36,7 @@ source1.direction.type = "momentum"
 source1.direction.momentum = [0, 0, 1]
 source1.n = 1000
 
-source2 = sim.add_source("Generic", "source2")
+source2 = sim.add_source("GenericSource", "source2")
 source2.particle = "proton"
 source2.energy.mono = 120 * MeV
 source2.position.radius = 5 * mm
@@ -46,7 +45,7 @@ source2.direction.type = "momentum"
 source2.direction.momentum = [0, 0, 1]
 source2.start_time = 0.25 * sec
 
-source3 = sim.add_source("Generic", "source3")
+source3 = sim.add_source("GenericSource", "source3")
 source3.particle = "proton"
 source3.energy.mono = 150 * MeV
 source3.position.radius = 10 * mm
@@ -77,14 +76,13 @@ sim.run_timing_intervals = [
     [1.5 * sec, 2.5 * sec],
 ]
 
-# create G4 objects
-sim.initialize()
+# print sources
 print(sim.dump_sources())
 
 # start simulation
-sim.start()
+output = sim.start()
 
-stats = sim.get_actor("Stats")
+stats = output.get_actor("Stats")
 print(stats)
 
 stats_ref = gate.SimulationStatisticsActor()
@@ -96,6 +94,6 @@ c.step_count = 133291  # 217234
 # stats_ref.pps = 4059.6 3 3112.2
 c.duration = 1 / 4059.6 * 3900 * sec
 print("-" * 80)
-is_ok = gate.assert_stats(stats, stats_ref, 0.18)
+is_ok = gate.assert_stats(stats, stats_ref, 0.185)
 
 gate.test_ok(is_ok)

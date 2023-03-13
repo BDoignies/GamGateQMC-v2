@@ -18,6 +18,7 @@ ui = sim.user_info
 ui.g4_verbose = False
 ui.g4_verbose_level = 1
 ui.visu = False
+ui.random_seed = 123654987
 
 # units
 m = gate.g4_units("m")
@@ -69,15 +70,14 @@ dose.translation = [0 * mm, 0 * mm, 0 * mm]
 sec = gate.g4_units("second")
 sim.run_timing_intervals = [[0, 1 * sec]]
 
-print(sim.volume_manager.dump_tree())
+print(sim.volume_manager.dump_tree_of_volumes())
 print(sim.source_manager.dump())
 
 # initialize & start
-sim.initialize()
-sim.start()
+output = sim.start()
 
 # Only for reference stats:
-stats = sim.get_actor("stats")
+stats = output.get_actor("stats")
 # stats.write('output_ref/test015_stats.txt')
 
 # check
