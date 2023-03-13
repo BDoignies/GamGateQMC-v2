@@ -313,7 +313,7 @@ class SimulationEngine(gate.EngineBase):
         )
 
     def initialize_random_engine(self):
-        engine_name = self.user_info.random_engine
+        engine_name = self.simulation.user_info.random_engine
         self.g4_HepRandomEngine = None
         if engine_name == "MixMaxRng":
             self.g4_HepRandomEngine = g4.MixMaxRng()
@@ -322,8 +322,8 @@ class SimulationEngine(gate.EngineBase):
 
         # @BD : Add support for custom random engine
         if engine_name == g4.qmc.QMCEngine:
-            params = self.user_info.random_parameters
-            verbose = self.user_info.random_verbose
+            params = self.simulation.user_info.random_parameters
+            verbose = self.simulation.user_info.random_verbose
             self.g4_HepRandomEngine = g4.qmc.QMCRandomEngine(params, verbose)
             
         if not self.g4_HepRandomEngine:
@@ -333,10 +333,10 @@ class SimulationEngine(gate.EngineBase):
 
         # set the random engine
         g4.G4Random.setTheEngine(self.g4_HepRandomEngine)
-        if self.user_info.random_seed == "auto":
+        if self.simulation.user_info.random_seed == "auto":
             self.actual_random_seed = random.randrange(sys.maxsize)
         else:
-            self.actual_random_seed = self.user_info.random_seed
+            self.actual_random_seed = self.simulation.user_info.random_seed
 
         # set the seed
         g4.G4Random.setTheSeed(self.actual_random_seed, 0)
