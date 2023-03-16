@@ -3,6 +3,10 @@
 #include "G4LossTableManager.hh"
 #include "G4EmParameters.hh"
 #include "G4EmBuilder.hh"
+#include "G4TransportationWithMsc.hh"
+#include "G4ProcessManager.hh"
+#include "G4TransportationProcessType.hh"
+#include "G4VMscModel.hh"
 
 #include "G4ComptonScattering.hh"
 #include "G4GammaConversion.hh"
@@ -107,8 +111,7 @@ void LimittedPhysicList::ConstructParticle()
 
 void LimittedPhysicList::ConstructProcess()
 {
-    
-    // G4EmBuilder::PrepareEMPhysics();
+    G4EmBuilder::PrepareEMPhysics();
     
     // Gamma processes :
     
@@ -259,6 +262,65 @@ void LimittedPhysicList::BuildRayleighScattering(const ProcessLimits& limits, in
     ph->RegisterProcess(process, particle);
 }
 
+void LimittedPhysicList::ConstructElectronMscProcessWrapper(
+    G4VMscModel* msc1, G4VMscModel* msc2,
+    G4ParticleDefinition* particle,
+    const ProcessLimits& limits, int maxSteps
+)
+{
+    G4TransportationWithMscType type = G4EmParameters::Instance()->TransportationWithMsc();
+    G4ProcessManager* procManager = particle->GetProcessManager();
+    auto plist = procManager->GetProcessList();
+    G4int ptype = (0 < plist->size()) ? (*plist)[0]->GetProcessSubType() : 0;
+
+    if(type != G4TransportationWithMscType::fDisabled && ptype == TRANSPORTATION) 
+    {
+        std::cout << "Warning: MSC PROCESS NOT LIMITTED YET for transportation enabled with MscTypes" << std::endl;
+        // Remove default G4Transportation and replace with G4TransportationWithMsc.
+        procManager->RemoveProcess(0);
+        G4TransportationWithMsc* transportWithMsc = new G4TransportationWithMsc(
+            G4TransportationWithMsc::ScatteringType::MultipleScattering
+        );
+        
+        if(type == G4TransportationWithMscType::fMultipleSteps) 
+        {
+            transportWithMsc->SetMultipleSteps(true);
+        }
+        transportWithMsc->AddMscModel(msc1);
+        
+        if(msc2 != nullptr) 
+        {
+            transportWithMsc->AddMscModel(msc2);
+        }
+        
+        procManager->AddProcess(transportWithMsc, -1, 0, 0);
+    } 
+    else 
+    {
+        // Register as a separate process.
+        G4eMultipleScattering* msc = new G4eMultipleScattering();
+        msc->SetEmModel(msc1);
+        if(msc2 != nullptr) 
+        {
+            msc->SetEmModel(msc2);
+        }
+        
+        G4PhysicsListHelper* ph = G4PhysicsListHelper::GetPhysicsListHelper();
+        if (maxSteps > 100000)
+        {
+            std::cout << "No limits" << std::endl;
+            ph->RegisterProcess(msc, particle);
+        }
+        else
+        {
+            std::cout << "Limits" << std::endl;
+            StepsCountLimittedProcess* process = new StepsCountLimittedProcess(limits, maxSteps, msc);
+            ph->RegisterProcess(process, particle);
+        }
+        
+  }
+}
+
 void LimittedPhysicList::BuildElectronMSC(const ProcessLimits& limits, int maxSteps)
 {
     const G4EmParameters* param = G4EmParameters::Instance();
@@ -268,16 +330,18 @@ void LimittedPhysicList::BuildElectronMSC(const ProcessLimits& limits, int maxSt
 
     G4ParticleDefinition* particle = G4Electron::Electron();
     
-    G4eMultipleScattering* msc = new G4eMultipleScattering();
+    // G4eMultipleScattering* msc = new G4eMultipleScattering();
     G4GoudsmitSaundersonMscModel* msc1 = new G4GoudsmitSaundersonMscModel();
     G4WentzelVIModel* msc2 = new G4WentzelVIModel();
     msc1->SetHighEnergyLimit(highEnergyLimit);
     msc2->SetLowEnergyLimit(highEnergyLimit);
-    msc->SetEmModel(msc1);
-    msc->SetEmModel(msc2);
+    // msc->SetEmModel(msc1);
+    // msc->SetEmModel(msc2);
 
-    StepsCountLimittedProcess* process = new StepsCountLimittedProcess(limits, maxSteps, msc);
-    ph->RegisterProcess(process, particle);
+    ConstructElectronMscProcessWrapper(msc1, msc2, particle, limits, maxSteps);
+
+    // StepsCountLimittedProcess* process = new StepsCountLimittedProcess(limits, maxSteps, msc);
+    // ph->RegisterProcess(process, particle);
 }
 
 void LimittedPhysicList::BuildElectronIonisation(const ProcessLimits& limits, int maxSteps)

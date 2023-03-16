@@ -4,6 +4,7 @@
 
 #include "G4VPhysicsConstructor.hh"
 #include "globals.hh"
+#include "G4VMscModel.hh"
 
 #include "ProcessLimits.h"
 
@@ -58,6 +59,11 @@ private:
 
     void BuildPairProduction(const ProcessLimits& limits, int maxSteps);
 
+    void ConstructElectronMscProcessWrapper(
+        G4VMscModel* msc1, G4VMscModel* msc2,
+        G4ParticleDefinition* particle,
+        const ProcessLimits& limits, int maxSteps
+    );
 
     G4int                  maxGlobalSteps;            //< Maximum number of steps
     std::map<std::string, ProcessLimits> processes;   //< Processes and the way they are limitted

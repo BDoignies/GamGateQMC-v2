@@ -3,6 +3,9 @@
 
 #include "G4VEmProcess.hh"
 
+// #define DEBUG(X) X
+#define DEBUG(X)
+
 StepsCountLimittedProcess::StepsCountLimittedProcess(const ProcessLimits& l, G4int maxG, G4VProcess* process) : 
     G4WrapperProcess("StepsCountLimittedProcess[" + process->GetProcessName() + "]"),
     maxGlobalSteps(maxG),
@@ -15,24 +18,30 @@ StepsCountLimittedProcess::StepsCountLimittedProcess(const ProcessLimits& l, G4i
 
 G4VParticleChange* StepsCountLimittedProcess::PostStepDoIt(const G4Track& track, const G4Step& stepData)
 {
+    DEBUG(std::cout << "PostStepDoIt: " << GetProcessName() << std::endl);
     // Sample of secondary particles context is left to underlying implementation
     return KillTrack(stepData) ? &change : pRegProcess->PostStepDoIt(track, stepData);
 }
 
 G4VParticleChange* StepsCountLimittedProcess::AlongStepDoIt(const G4Track& track, const G4Step& stepData)
 {
+    DEBUG(std::cout << "AlongStepDoIt: " << GetProcessName() << std::endl);
     // Sample of secondary particles context is left to underlying implementation
     return KillTrack(stepData) ? &change : pRegProcess->AlongStepDoIt(track, stepData);
 }
 
 G4VParticleChange* StepsCountLimittedProcess::AtRestDoIt(const G4Track& track, const G4Step& stepData)
 {
+    DEBUG(std::cout << "AtRestDoIt: " << GetProcessName() << std::endl);
+
     // Sample of secondary particles context is left to underlying implementation
     return KillTrack(stepData) ? &change : pRegProcess->AtRestDoIt(track, stepData);
 }
 
 G4double StepsCountLimittedProcess::AlongStepGetPhysicalInteractionLength (const G4Track &track, G4double previousStepSize, G4double currentMinimumStep, G4double &proposedSafety, G4GPILSelection *selection)
 {
+    DEBUG(std::cout << "AlongStepGetPhysicalInteractionLength: " << GetProcessName() << std::endl);
+
     auto it = processSteps.find(track.GetTrackID());
     if (it != processSteps.end() && it->second > limits.maxInteractions) 
     { 
@@ -46,6 +55,8 @@ G4double StepsCountLimittedProcess::AlongStepGetPhysicalInteractionLength (const
 
 G4double StepsCountLimittedProcess::AtRestGetPhysicalInteractionLength (const G4Track &track, G4ForceCondition *condition)
 {
+    DEBUG(std::cout << "AtRestGetPhysicalInteractionLength: " << GetProcessName() << std::endl);
+
     auto it = processSteps.find(track.GetTrackID());
     if (it != processSteps.end() && it->second > limits.maxInteractions) 
     { 
@@ -59,6 +70,8 @@ G4double StepsCountLimittedProcess::AtRestGetPhysicalInteractionLength (const G4
 
 G4double StepsCountLimittedProcess::PostStepGetPhysicalInteractionLength (const G4Track &track, G4double previousStepSize, G4ForceCondition *condition)
 {
+    DEBUG(std::cout << "PostStepGetPhysicalInteractionLength: " << GetProcessName() << std::endl);
+
     auto it = processSteps.find(track.GetTrackID());
     if (it != processSteps.end() && it->second > limits.maxInteractions) 
     { 
@@ -71,14 +84,19 @@ G4double StepsCountLimittedProcess::PostStepGetPhysicalInteractionLength (const 
 
 void StepsCountLimittedProcess::StartTracking(G4Track* track)
 {
+    DEBUG(std::cout << "StartTracking: " << GetProcessName() << std::endl);
+
     // Reset the count when a new track is created. Track do not
     // embed the event number, so no way to differentiate between 
     // two track with same Id.
     processSteps[track->GetTrackID()] = 0;
+    pRegProcess->StartTracking(track);
 }
 
 bool StepsCountLimittedProcess::KillTrack(const G4Step& step)
 {
+    DEBUG(std::cout << "KillTrack: " << GetProcessName() << std::endl);
+    
     G4Track& track = *step.GetTrack();
     // Kill only on global number of step 
     // Otherwise, reaching limit of a process would kill the 
